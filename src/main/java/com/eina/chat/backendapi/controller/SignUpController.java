@@ -1,8 +1,8 @@
 package com.eina.chat.backendapi.controller;
 
 import com.eina.chat.backendapi.errors.WSResponseStatus;
+import com.eina.chat.backendapi.exceptions.ClientProducedException;
 import com.eina.chat.backendapi.exceptions.DatabaseInternalException;
-import com.eina.chat.backendapi.exceptions.SignUpException;
 import com.eina.chat.backendapi.model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,7 +53,7 @@ public class SignUpController {
     @MessageMapping("/sign-up")
     @SendToUser("/queue/error/sign-up")
     public WSResponseStatus signUpUser(User user, @Header("simpSessionId") String simpSessionId)
-            throws SignUpException, DatabaseInternalException {
+            throws ClientProducedException, DatabaseInternalException {
         // TODO: Implement method
         return new WSResponseStatus(WSResponseStatus.StatusType.SUCCESS , "User created");
     }
@@ -64,10 +64,10 @@ public class SignUpController {
      * @param e exception captured
      */
     @SuppressWarnings("unused")
-    @MessageExceptionHandler(SignUpException.class)
+    @MessageExceptionHandler(ClientProducedException.class)
     public void userErrorHandlerGetInfo(Exception e) {
         // User error
-        SignUpException ex = (SignUpException) e;
+        ClientProducedException ex = (ClientProducedException) e;
         sendErrorToSubscriber(ex.getSimpSessionId(), ex.getMessage(), simpMessagingTemplate);
     }
 

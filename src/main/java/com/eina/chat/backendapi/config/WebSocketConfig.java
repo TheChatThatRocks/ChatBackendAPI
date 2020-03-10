@@ -14,7 +14,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void configureMessageBroker(MessageBrokerRegistry config) {
         config.enableSimpleBroker(
                 "/sign-up", // Sign up
-                "/queue/error/sign-up" //  Sign up errors
+                "/queue/error/sign-up", //  Sign up errors
+                "/send-direct-message", // Send direct message
+                "/queue/error/send-direct-message" // Send direct message errors
         );
 
         config.setApplicationDestinationPrefixes("/app");
@@ -24,7 +26,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws")
-                .setAllowedOrigins("*")
-                .withSockJS();
+                .setAllowedOrigins("*");
+                //.withSockJS();
     }
 }
