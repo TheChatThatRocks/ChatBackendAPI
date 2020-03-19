@@ -21,7 +21,6 @@ public class AuthChannelInterceptorAdapter implements ChannelInterceptor {
 
     @Override
     public Message<?> preSend(final Message<?> message, final MessageChannel channel) throws AuthenticationException {
-        System.out.println("Inside pre send --------------------------");
         final StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
 
         if (StompCommand.CONNECT == accessor.getCommand()) {
@@ -31,9 +30,13 @@ public class AuthChannelInterceptorAdapter implements ChannelInterceptor {
 
             final UsernamePasswordAuthenticationToken user = webSocketAuthenticatorService.getAuthenticatedOrFail(username, password);
 
+            if(user.isAuthenticated()){
+                System.out.println("Esta autenticado --------------------------------------------");
+            }else{
+                System.out.println("No Esta autenticado --------------------------------------------");
+            }
             accessor.setUser(user);
         }
-        System.out.println("Antes return message --------------------------");
         return message;
     }
 }

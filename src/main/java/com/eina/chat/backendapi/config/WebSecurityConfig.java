@@ -15,9 +15,6 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         http.httpBasic().disable()
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
                 .authorizeRequests().antMatchers("/ws").permitAll()
-                .anyRequest().permitAll();
-
-        // TODO: Must deny other requests
-    //.anyRequest().denyAll();
+                .anyRequest().denyAll();
     }
 }

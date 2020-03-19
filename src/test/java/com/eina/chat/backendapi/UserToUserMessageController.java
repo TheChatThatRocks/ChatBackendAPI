@@ -46,11 +46,12 @@ public class UserToUserMessageController {
 
     @BeforeAll
     public void setup() {
-        List<Transport> transports = new ArrayList<>();
-        transports.add(new WebSocketTransport(new StandardWebSocketClient()));
-        SockJsClient sockJsClient = new SockJsClient(transports);
+        // List<Transport> transports = new ArrayList<>();
+        //transports.add(new WebSocketTransport(new StandardWebSocketClient()));
+        //StandardWebSocketClient sockJsClient = new StandardWebSocketClient(transports);
+        StandardWebSocketClient standardWebSocketClient = new StandardWebSocketClient();
 
-        this.stompClient = new WebSocketStompClient(sockJsClient);
+        this.stompClient = new WebSocketStompClient(standardWebSocketClient);
         this.stompClient.setMessageConverter(new MappingJackson2MessageConverter());
 
     }

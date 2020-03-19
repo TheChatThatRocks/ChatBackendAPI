@@ -23,11 +23,6 @@ public class WebSocketAuthenticationSecurityConfig implements WebSocketMessageBr
 
     @Override
     public void configureClientInboundChannel(final ChannelRegistration registration) {
-        if (authChannelInterceptorAdapter == null){
-            System.out.println("Si es null -------------------------------------------------------");
-        }else{
-            System.out.println("No es null -------------------------------------------------------");
-        }
         registration.interceptors(authChannelInterceptorAdapter);
     }
 
