@@ -70,8 +70,8 @@ public class UserToUserMessageController {
         SignUpEndpointStompSessionHandler handler = new SignUpEndpointStompSessionHandler(failure, new User("user", "password"), messagesToReceive);
 
         StompHeaders connectHeaders = new StompHeaders();
-        connectHeaders.add("login", "test1");
-        connectHeaders.add("passcode", "test");
+        connectHeaders.add("username", "test1");
+        connectHeaders.add("password", "test");
 
         ListenableFuture<StompSession> session = this.stompClient.connect("ws://" + backEndURI + ":{port}/ws", this.headers, connectHeaders, handler, this.port);
 

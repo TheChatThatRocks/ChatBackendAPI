@@ -13,8 +13,8 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class AuthChannelInterceptorAdapter implements ChannelInterceptor {
-    private static final String USERNAME_HEADER = "login";
-    private static final String PASSWORD_HEADER = "passcode";
+    private static final String USERNAME_HEADER = "username";
+    private static final String PASSWORD_HEADER = "password";
 
     @Autowired
     WebSocketAuthenticatorService webSocketAuthenticatorService;
@@ -22,9 +22,7 @@ public class AuthChannelInterceptorAdapter implements ChannelInterceptor {
     @Override
     public Message<?> preSend(final Message<?> message, final MessageChannel channel) throws AuthenticationException {
         final StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
-
-        if (StompCommand.CONNECT == accessor.getCommand()) {
-
+        if (accessor != null && StompCommand.CONNECT == accessor.getCommand()) {
             final String username = accessor.getFirstNativeHeader(USERNAME_HEADER);
 
             // TODO: Password siempre aparece como protected
@@ -34,9 +32,9 @@ public class AuthChannelInterceptorAdapter implements ChannelInterceptor {
 
             final UsernamePasswordAuthenticationToken user = webSocketAuthenticatorService.getAuthenticatedOrFail(username, password);
 
-            if(user.isAuthenticated()){
+            if (user.isAuthenticated()) {
                 System.out.println("Esta autenticado --------------------------------------------");
-            }else{
+            } else {
                 System.out.println("No Esta autenticado --------------------------------------------");
             }
             accessor.setUser(user);
