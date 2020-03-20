@@ -63,6 +63,8 @@ public class UserToUserMessageController {
     public void newUser() throws Exception {
         final AtomicReference<Throwable> failure = new AtomicReference<>();
 
+        System.out.println("Esto es una prueba de mensaje----------------------------------------------------------------------");
+
         final CountDownLatch messagesToReceive = new CountDownLatch(1);
 
         SignUpEndpointStompSessionHandler handler = new SignUpEndpointStompSessionHandler(failure, new User("user", "password"), messagesToReceive);
@@ -113,6 +115,7 @@ public class UserToUserMessageController {
         @Override
         public void afterConnected(StompSession session, StompHeaders connectedHeaders) {
             // Subscribe to errors
+            System.out.println("Client conected ----------------------------------------------------------------------------------------------");
             session.subscribe("/user/queue/error/sign-up", errorFrameHandler);
 
             session.send("/app/sign-up", user);

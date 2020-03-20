@@ -19,7 +19,9 @@ public class WebSocketAuthenticatorService {
         if (username == null || username.trim().isEmpty()) {
             throw new AuthenticationCredentialsNotFoundException("Username was null or empty");
         }
+        System.out.println("Actual password: " + password + "|n");
         if (password == null || password.trim().isEmpty()) {
+            System.out.println("Password empty --------------------------");
             throw new AuthenticationCredentialsNotFoundException("Password was null or empty");
         }
         // Add your own logic for retrieving user in fetchUserFromDb()

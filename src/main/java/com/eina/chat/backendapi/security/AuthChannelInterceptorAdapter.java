@@ -26,7 +26,11 @@ public class AuthChannelInterceptorAdapter implements ChannelInterceptor {
         if (StompCommand.CONNECT == accessor.getCommand()) {
 
             final String username = accessor.getFirstNativeHeader(USERNAME_HEADER);
+
+            // TODO: Password siempre aparece como protected
             final String password = accessor.getFirstNativeHeader(PASSWORD_HEADER);
+
+            System.out.println("Credentials obtained: " + username + "|n|" + password + "|n");
 
             final UsernamePasswordAuthenticationToken user = webSocketAuthenticatorService.getAuthenticatedOrFail(username, password);
 

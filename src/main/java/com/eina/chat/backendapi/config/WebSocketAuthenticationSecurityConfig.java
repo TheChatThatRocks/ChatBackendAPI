@@ -9,7 +9,6 @@ import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
-// Original source: https://stackoverflow.com/questions/45405332/websocket-authentication-and-authorization-in-spring
 @Configuration
 @Order(Ordered.HIGHEST_PRECEDENCE + 99)
 public class WebSocketAuthenticationSecurityConfig implements WebSocketMessageBrokerConfigurer {
