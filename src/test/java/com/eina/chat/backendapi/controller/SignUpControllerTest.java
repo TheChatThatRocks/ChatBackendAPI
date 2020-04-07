@@ -1,4 +1,4 @@
-package com.eina.chat.backendapi;
+package com.eina.chat.backendapi.controller;
 
 import com.eina.chat.backendapi.errors.WSResponseStatus;
 import com.eina.chat.backendapi.model.User;
@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-public class SignUpController {
+public class SignUpControllerTest {
     @LocalServerPort
     private int port;
 
