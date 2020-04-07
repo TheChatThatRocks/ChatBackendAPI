@@ -8,10 +8,9 @@ import org.springframework.security.config.annotation.web.socket.AbstractSecurit
 public class WebSocketAuthorizationSecurityConfig extends AbstractSecurityWebSocketMessageBrokerConfigurer {
     @Override
     protected void configureInbound(final MessageSecurityMetadataSourceRegistry messages) {
-        System.out.println("Inside configure in bound --------------------------");
         // Authorization mapping
         messages.nullDestMatcher().permitAll()
-                .simpSubscribeDestMatchers("/user/**").authenticated()//.hasRole("USER")
+                .simpSubscribeDestMatchers("/user/**").authenticated()
                 .simpDestMatchers("/app/**").authenticated()
                 .anyMessage().denyAll();
     }
