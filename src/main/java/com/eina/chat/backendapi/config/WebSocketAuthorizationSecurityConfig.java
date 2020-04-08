@@ -10,8 +10,11 @@ public class WebSocketAuthorizationSecurityConfig extends AbstractSecurityWebSoc
     protected void configureInbound(final MessageSecurityMetadataSourceRegistry messages) {
         // Authorization mapping
         messages.nullDestMatcher().permitAll()
-                .simpSubscribeDestMatchers("/user/**").authenticated()
-                .simpDestMatchers("/app/**").authenticated()
+                .simpSubscribeDestMatchers("/user/queue/error/sign-up").permitAll()
+                .simpSubscribeDestMatchers("/user/queue/error/message").authenticated()
+                .simpSubscribeDestMatchers("/user/queue/message").authenticated()
+                .simpDestMatchers("/app/sign-up").permitAll()
+                .simpDestMatchers("/app/message").authenticated()
                 .anyMessage().denyAll();
     }
 

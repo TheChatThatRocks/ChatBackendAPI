@@ -14,13 +14,9 @@ import org.springframework.util.concurrent.ListenableFuture;
 import org.springframework.web.socket.WebSocketHttpHeaders;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.messaging.WebSocketStompClient;
-import org.springframework.web.socket.sockjs.client.SockJsClient;
-import org.springframework.web.socket.sockjs.client.Transport;
-import org.springframework.web.socket.sockjs.client.WebSocketTransport;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -46,11 +42,9 @@ public class SignUpControllerTest {
 
     @BeforeAll
     public void setup() {
-        List<Transport> transports = new ArrayList<>();
-        transports.add(new WebSocketTransport(new StandardWebSocketClient()));
-        SockJsClient sockJsClient = new SockJsClient(transports);
+        StandardWebSocketClient standardWebSocketClient = new StandardWebSocketClient();
 
-        this.stompClient = new WebSocketStompClient(sockJsClient);
+        this.stompClient = new WebSocketStompClient(standardWebSocketClient);
         this.stompClient.setMessageConverter(new MappingJackson2MessageConverter());
     }
 
@@ -65,6 +59,7 @@ public class SignUpControllerTest {
 
         SignUpEndpointStompSessionHandler handler = new SignUpEndpointStompSessionHandler(failure, new User("user", "password"), messagesToReceive);
 
+        // TODO: Check why fail without credentials
         ListenableFuture<StompSession> session = this.stompClient.connect("ws://" + backEndURI + ":{port}/ws", this.headers, handler, this.port);
 
         if (messagesToReceive.await(10, TimeUnit.SECONDS)) {
