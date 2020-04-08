@@ -14,6 +14,7 @@ import org.springframework.web.socket.messaging.WebSocketStompClient;
 
 import java.lang.reflect.Type;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -32,6 +33,9 @@ public class MessageControllerTest {
 
     @Test
     public void sendMessageFromUserToUserBoothOnline() throws Exception {
+        // Handle exceptions in threads
+        final AtomicReference<Throwable> failure = new AtomicReference<>();
+
         // Variables
         String nameUser1 = "testUser1";
         String nameUser2 = "testUser2";
@@ -74,33 +78,6 @@ public class MessageControllerTest {
         final int sendMessageID = 4;
         final String sendMessageContent = "testMessage";
 
-        sessionUser1.subscribe("/user/queue/error/message", new StompFrameHandler() {
-            @Override
-            public Type getPayloadType(StompHeaders headers) {
-                return ErrorMessage.class;
-            }
-
-            @Override
-            public void handleFrame(StompHeaders headers, Object payload) {
-                System.out.println("Frame ha llegado a errores user 1");
-                ErrorMessage errorMessage = (ErrorMessage) payload;
-                assert (errorMessage.getTypeOfMessage() == TypeOfMessage.OPERATION_SUCCEED && errorMessage.getMessageId() == sendMessageID);
-                messagesToReceive.countDown();
-            }
-        });
-
-        sessionUser2.subscribe("/user/queue/error/message", new StompFrameHandler() {
-            @Override
-            public Type getPayloadType(StompHeaders headers) {
-                return ErrorMessage.class;
-            }
-
-            @Override
-            public void handleFrame(StompHeaders headers, Object payload) {
-                System.out.println("Frame ha llegado a errores user 2");
-            }
-        });
-
         sessionUser1.subscribe("/user/queue/message", new StompFrameHandler() {
             @Override
             public Type getPayloadType(StompHeaders headers) {
@@ -109,14 +86,7 @@ public class MessageControllerTest {
 
             @Override
             public void handleFrame(StompHeaders headers, Object payload) {
-                System.out.println("Frame ha llegado a mensajes user 1");
-
-                assert (payload instanceof MessageFromUser || payload instanceof JoinedChatRoomHistory);
-
-                if (payload instanceof MessageFromUser) {
-                    assert (((MessageFromUser) payload).getMessage().equals(sendMessageContent) && ((MessageFromUser) payload).getFrom().equals(nameUser2));
-                    messagesToReceive.countDown();
-                }
+                failure.set(new Exception("Message arrived to User1"));
             }
         });
 
@@ -128,7 +98,43 @@ public class MessageControllerTest {
 
             @Override
             public void handleFrame(StompHeaders headers, Object payload) {
-                System.out.println("Frame ha llegado a mensajes user 2");
+                if (payload instanceof MessageFromUser &&
+                        ((MessageFromUser) payload).getMessage().equals(sendMessageContent) &&
+                        ((MessageFromUser) payload).getFrom().equals(nameUser1)) {
+                    messagesToReceive.countDown();
+                } else {
+                    failure.set(new Exception("Message with bad content in User2"));
+                }
+            }
+        });
+
+        sessionUser1.subscribe("/user/queue/error/message", new StompFrameHandler() {
+            @Override
+            public Type getPayloadType(StompHeaders headers) {
+                return ErrorMessage.class;
+            }
+
+            @Override
+            public void handleFrame(StompHeaders headers, Object payload) {
+                ErrorMessage errorMessage = (ErrorMessage) payload;
+                if (errorMessage.getTypeOfMessage() == TypeOfMessage.OPERATION_SUCCEED && errorMessage.getMessageId() == sendMessageID) {
+                    messagesToReceive.countDown();
+                } else {
+                    failure.set(new Exception("Message with bad content in User1 errors"));
+                }
+            }
+        });
+
+
+        sessionUser2.subscribe("/user/queue/error/message", new StompFrameHandler() {
+            @Override
+            public Type getPayloadType(StompHeaders headers) {
+                return ErrorMessage.class;
+            }
+
+            @Override
+            public void handleFrame(StompHeaders headers, Object payload) {
+                failure.set(new Exception("Message in User2 errors"));
             }
         });
 
@@ -136,6 +142,8 @@ public class MessageControllerTest {
 
         if (!messagesToReceive.await(10, SECONDS)) {
             fail("Test wasn't completed");
+        } else if(failure.get() != null){
+            fail(failure.get().getMessage());
         }
 
         sessionUser1.disconnect();

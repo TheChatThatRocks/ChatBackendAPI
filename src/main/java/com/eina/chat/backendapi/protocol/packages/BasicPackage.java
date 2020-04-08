@@ -4,9 +4,11 @@ public abstract class BasicPackage {
     private TypeOfMessage typeOfMessage;
     private int messageId;
 
+    @SuppressWarnings("unused")
     public BasicPackage() {
     }
 
+    @SuppressWarnings("unused")
     public BasicPackage(TypeOfMessage typeOfMessage, int messageId) {
         this.typeOfMessage = typeOfMessage;
         this.messageId = messageId;
