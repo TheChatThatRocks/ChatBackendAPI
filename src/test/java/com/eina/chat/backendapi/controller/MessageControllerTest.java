@@ -82,26 +82,53 @@ public class MessageControllerTest {
 
             @Override
             public void handleFrame(StompHeaders headers, Object payload) {
+                System.out.println("Frame ha llegado a errores user 1");
                 ErrorMessage errorMessage = (ErrorMessage) payload;
                 assert (errorMessage.getTypeOfMessage() == TypeOfMessage.OPERATION_SUCCEED && errorMessage.getMessageId() == sendMessageID);
                 messagesToReceive.countDown();
             }
         });
 
-        sessionUser2.subscribe("/user/queue/message", new StompFrameHandler() {
+        sessionUser2.subscribe("/user/queue/error/message", new StompFrameHandler() {
             @Override
             public Type getPayloadType(StompHeaders headers) {
-                return BasicPackage.class;
+                return ErrorMessage.class;
             }
 
             @Override
             public void handleFrame(StompHeaders headers, Object payload) {
+                System.out.println("Frame ha llegado a errores user 2");
+            }
+        });
+
+        sessionUser1.subscribe("/user/queue/message", new StompFrameHandler() {
+            @Override
+            public Type getPayloadType(StompHeaders headers) {
+                return MessageFromUser.class;
+            }
+
+            @Override
+            public void handleFrame(StompHeaders headers, Object payload) {
+                System.out.println("Frame ha llegado a mensajes user 1");
+
                 assert (payload instanceof MessageFromUser || payload instanceof JoinedChatRoomHistory);
 
                 if (payload instanceof MessageFromUser) {
                     assert (((MessageFromUser) payload).getMessage().equals(sendMessageContent) && ((MessageFromUser) payload).getFrom().equals(nameUser2));
                     messagesToReceive.countDown();
                 }
+            }
+        });
+
+        sessionUser2.subscribe("/user/queue/message", new StompFrameHandler() {
+            @Override
+            public Type getPayloadType(StompHeaders headers) {
+                return MessageFromUser.class;
+            }
+
+            @Override
+            public void handleFrame(StompHeaders headers, Object payload) {
+                System.out.println("Frame ha llegado a mensajes user 2");
             }
         });
 

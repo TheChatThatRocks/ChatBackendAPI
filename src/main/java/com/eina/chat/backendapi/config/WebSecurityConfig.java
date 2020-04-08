@@ -13,6 +13,6 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         // This is not for websocket authorization, and this should most likely not be altered.
         http.httpBasic().disable().sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
                 .authorizeRequests().antMatchers("/ws").permitAll()
-                .anyRequest().denyAll();
+                .anyRequest().permitAll();
     }
 }

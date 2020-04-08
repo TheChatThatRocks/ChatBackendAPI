@@ -3,16 +3,16 @@ package com.eina.chat.backendapi.service;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 @Service
 public class MessageBrokerAPI {
-
     // TODO: Quitar
-    ArrayList<BrokerMessagePackage> callbacks = new ArrayList<>();
+    HashMap<String, BrokerMessagePackage> callbacks = new HashMap<>();
 
     public boolean sendMessageToUser(String userFrom, String userTo, String message) {
-        for (BrokerMessagePackage i : callbacks){
-            i.onUserMessageArrive(userFrom, message);
+        if (callbacks.containsKey(userTo)) {
+            callbacks.get(userTo).onUserMessageArrive(userFrom, message);
         }
         return true;
     }
@@ -34,15 +34,15 @@ public class MessageBrokerAPI {
      */
     public int addUserReceiverMessagesCallback(BrokerMessagePackage callable, String username) {
         // TODO:
-        callbacks.add(callable);
+        callbacks.put(username, callable);
         return 0;
     }
 
     public void deleteUserReceiverMessagesCallback(int callbackId) {
-
+        //callbacks.remove(callbackId);
     }
 
-    public boolean deleteUser(String username){
+    public boolean deleteUser(String username) {
         return true;
     }
 }

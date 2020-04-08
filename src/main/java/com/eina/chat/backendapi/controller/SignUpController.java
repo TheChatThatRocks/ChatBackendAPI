@@ -7,6 +7,7 @@ import com.eina.chat.backendapi.model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.event.EventListener;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -14,7 +15,11 @@ import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessageType;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.annotation.SendToUser;
+import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
+import org.springframework.messaging.support.GenericMessage;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.socket.messaging.SessionConnectedEvent;
+import org.springframework.web.socket.messaging.SessionSubscribeEvent;
 
 @Controller
 public class SignUpController {
@@ -55,7 +60,7 @@ public class SignUpController {
     public WSResponseStatus signUpUser(User user, @Header("simpSessionId") String simpSessionId)
             throws ClientProducedException, DatabaseInternalException {
         // TODO: Implement method
-        return new WSResponseStatus(WSResponseStatus.StatusType.SUCCESS , "User created");
+        return new WSResponseStatus(WSResponseStatus.StatusType.SUCCESS, "User created");
     }
 
     /**

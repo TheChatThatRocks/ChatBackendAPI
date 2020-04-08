@@ -3,8 +3,7 @@ package com.eina.chat.backendapi.protocol.packages;
 public class ErrorMessage extends BasicPackage {
     private String description;
 
-    public ErrorMessage(String description) {
-        this.description = description;
+    public ErrorMessage() {
     }
 
     public ErrorMessage(TypeOfMessage typeOfMessage, int messageId, String description) {

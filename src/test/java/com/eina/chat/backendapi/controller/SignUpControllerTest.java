@@ -59,8 +59,12 @@ public class SignUpControllerTest {
 
         SignUpEndpointStompSessionHandler handler = new SignUpEndpointStompSessionHandler(failure, new User("user", "password"), messagesToReceive);
 
+        StompHeaders connectHeadersUser1 = new StompHeaders();
+        connectHeadersUser1.add("username", "nameUser1");
+        connectHeadersUser1.add("password", "passUser1");
+
         // TODO: Check why fail without credentials
-        ListenableFuture<StompSession> session = this.stompClient.connect("ws://" + backEndURI + ":{port}/ws", this.headers, handler, this.port);
+        ListenableFuture<StompSession> session = this.stompClient.connect("ws://" + backEndURI + ":{port}/ws", this.headers,connectHeadersUser1, handler, this.port);
 
         if (messagesToReceive.await(10, TimeUnit.SECONDS)) {
             if (failure.get() != null) {
