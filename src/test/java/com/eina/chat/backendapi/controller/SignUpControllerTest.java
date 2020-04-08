@@ -2,6 +2,9 @@ package com.eina.chat.backendapi.controller;
 
 import com.eina.chat.backendapi.errors.WSResponseStatus;
 import com.eina.chat.backendapi.model.User;
+import com.eina.chat.backendapi.protocol.packages.AddAccount;
+import com.eina.chat.backendapi.protocol.packages.ErrorResponse;
+import com.eina.chat.backendapi.protocol.packages.TypeOfMessage;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -21,6 +24,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -53,113 +57,66 @@ public class SignUpControllerTest {
      */
     @Test
     public void newUser() throws Exception {
+        // Failure variable
         final AtomicReference<Throwable> failure = new AtomicReference<>();
 
-        final CountDownLatch messagesToReceive = new CountDownLatch(1);
+        // Message id
+        final int messageId = 1;
 
-        SignUpEndpointStompSessionHandler handler = new SignUpEndpointStompSessionHandler(failure, new User("user", "password"), messagesToReceive);
+        // New user
+        AddAccount addAccount = new AddAccount(messageId, "user", "password");
 
+        // Session creation
         StompHeaders connectHeadersUser1 = new StompHeaders();
         connectHeadersUser1.add("username", "nameUser1");
         connectHeadersUser1.add("password", "passUser1");
 
         // TODO: Check why fail without credentials
-        ListenableFuture<StompSession> session = this.stompClient.connect("ws://" + backEndURI + ":{port}/ws", this.headers,connectHeadersUser1, handler, this.port);
+//        StompSession session = this.stompClient.connect("ws://" + backEndURI + ":{port}/ws", this.headers, connectHeadersUser1, new StompSessionHandlerAdapter() {
+//        }, this.port).get(2, SECONDS);
 
-        if (messagesToReceive.await(10, TimeUnit.SECONDS)) {
-            if (failure.get() != null) {
-                throw new AssertionError("", failure.get());
+        StompSession session = this.stompClient.connect("ws://" + backEndURI + ":{port}/ws", this.headers, new StompSessionHandlerAdapter() {
+        }, this.port).get(2, SECONDS);
+
+        // Check if connection have failed
+        assert (session != null && session.isConnected());
+
+        final CountDownLatch messagesToReceive = new CountDownLatch(1);
+
+        // Subscribe
+        session.subscribe("/user/queue/error/sign-up", new StompSessionHandlerAdapter() {
+            @Override
+            public Type getPayloadType(StompHeaders headers) {
+                return ErrorResponse.class;
             }
-            ArrayList<WSResponseStatus> messagesCaptured = handler.getMessagesCaptured();
-            assertEquals(1, messagesCaptured.size());
-            assertEquals("User created", messagesCaptured.get(0).getStatus());
-        } else {
-            fail("Original URL not received");
+
+            @Override
+            public void handleFrame(StompHeaders headers, Object payload) {
+                ErrorResponse errorResponse = (ErrorResponse) payload;
+                if (errorResponse.getMessageId() == messageId && errorResponse.getTypeOfMessage() == TypeOfMessage.SIGN_UP_SUCCESS) {
+                    messagesToReceive.countDown();
+                } else {
+                    failure.set(new Exception("Unexpected message received or sign-up fail"));
+                }
+            }
+        });
+
+        session.send("/app/sign-up", addAccount);
+
+        if (!messagesToReceive.await(10, TimeUnit.SECONDS)) {
+            fail("Test wasn't completed");
+        } else if (failure.get() != null) {
+            fail(failure.get().getMessage());
         }
 
-        session.completable().get().disconnect();
+        session.disconnect();
     }
 
     /**
      * Test signing up a user that exist yet
      */
     @Test
-    public void repeatedUser() throws Exception {
+    public void duplicatedUser() {
         // TODO: Implement method
-    }
-
-    private static class SignUpEndpointStompSessionHandler extends StompSessionHandlerAdapter {
-
-        private final AtomicReference<Throwable> failure;
-        private final ErrorFrameHandler errorFrameHandler;
-        private final User user;
-        private final CountDownLatch latch;
-
-        SignUpEndpointStompSessionHandler(AtomicReference<Throwable> failure,
-                                          User user, CountDownLatch latch) {
-            this.failure = failure;
-            this.user = user;
-            this.latch = latch;
-            errorFrameHandler = new ErrorFrameHandler(latch);
-        }
-
-        @Override
-        public void afterConnected(StompSession session, StompHeaders connectedHeaders) {
-            // Subscribe to errors
-            session.subscribe("/user/queue/error/sign-up", errorFrameHandler);
-
-            session.send("/app/sign-up", user);
-        }
-
-        @Override
-        public void handleFrame(StompHeaders headers, Object payload) {
-            this.failure.set(new Exception(headers.toString()));
-        }
-
-        @Override
-        public void handleException(StompSession s, StompCommand c, StompHeaders h, byte[] p, Throwable ex) {
-            this.failure.set(ex);
-            while (latch.getCount() > 0)
-                latch.countDown();
-        }
-
-        @Override
-        public void handleTransportError(StompSession session, Throwable ex) {
-            this.failure.set(ex);
-            while (latch.getCount() > 0)
-                latch.countDown();
-        }
-
-        ArrayList<WSResponseStatus> getMessagesCaptured() {
-            return errorFrameHandler.getMessagesCaptured();
-        }
-
-    }
-
-    /**
-     * Error handler
-     */
-    private static class ErrorFrameHandler implements StompFrameHandler {
-        private CountDownLatch latch;
-        private ArrayList<WSResponseStatus> messagesCaptured = new ArrayList<>();
-
-        ErrorFrameHandler(CountDownLatch latch) {
-            this.latch = latch;
-        }
-
-        @Override
-        public Type getPayloadType(StompHeaders headers) {
-            return WSResponseStatus.class;
-        }
-
-        @Override
-        public void handleFrame(StompHeaders headers, Object payload) {
-            messagesCaptured.add((WSResponseStatus) payload);
-            latch.countDown();
-        }
-
-        ArrayList<WSResponseStatus> getMessagesCaptured() {
-            return messagesCaptured;
-        }
     }
 }

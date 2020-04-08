@@ -38,9 +38,9 @@ public class UserToUserMessageController {
     @SendToUser("/queue/error/message")
     public BasicPackage userSendMessageToUser(@Payload SendMessageToUser sendMessageToUser, Principal principal) {
         if (messageBrokerAPI.sendMessageToUser(principal.getName(), sendMessageToUser.getUsername(), sendMessageToUser.getMessage())) {
-            return new ErrorMessage(TypeOfMessage.OPERATION_SUCCEED, sendMessageToUser.getMessageId(), "OK");
+            return new ErrorResponse(TypeOfMessage.OPERATION_SUCCEED, sendMessageToUser.getMessageId(), "OK");
         } else {
-            return new ErrorMessage(TypeOfMessage.SEND_MESSAGE_TO_USER_ERROR, sendMessageToUser.getMessageId(), "Not found");
+            return new ErrorResponse(TypeOfMessage.SEND_MESSAGE_TO_USER_ERROR, sendMessageToUser.getMessageId(), "Not found");
         }
     }
 

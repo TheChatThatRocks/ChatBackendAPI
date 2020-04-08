@@ -111,13 +111,13 @@ public class MessageControllerTest {
         sessionUser1.subscribe("/user/queue/error/message", new StompFrameHandler() {
             @Override
             public Type getPayloadType(StompHeaders headers) {
-                return ErrorMessage.class;
+                return ErrorResponse.class;
             }
 
             @Override
             public void handleFrame(StompHeaders headers, Object payload) {
-                ErrorMessage errorMessage = (ErrorMessage) payload;
-                if (errorMessage.getTypeOfMessage() == TypeOfMessage.OPERATION_SUCCEED && errorMessage.getMessageId() == sendMessageID) {
+                ErrorResponse errorResponse = (ErrorResponse) payload;
+                if (errorResponse.getTypeOfMessage() == TypeOfMessage.OPERATION_SUCCEED && errorResponse.getMessageId() == sendMessageID) {
                     messagesToReceive.countDown();
                 } else {
                     failure.set(new Exception("Message with bad content in User1 errors"));
@@ -129,7 +129,7 @@ public class MessageControllerTest {
         sessionUser2.subscribe("/user/queue/error/message", new StompFrameHandler() {
             @Override
             public Type getPayloadType(StompHeaders headers) {
-                return ErrorMessage.class;
+                return ErrorResponse.class;
             }
 
             @Override
