@@ -32,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-public class MessageControllerTest {
+public class CommandAPIControllerTest {
     @LocalServerPort
     private int port;
 
@@ -43,7 +43,7 @@ public class MessageControllerTest {
     private String backEndURI;
 
     // Logger
-    private static final Logger LOG = LoggerFactory.getLogger(MessageControllerTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(CommandAPIControllerTest.class);
 
     // User database service
     @Autowired

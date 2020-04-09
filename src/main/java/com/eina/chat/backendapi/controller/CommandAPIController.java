@@ -73,4 +73,18 @@ public class CommandAPIController {
             }, username);
         }
     }
+
+    /**
+     * Notify when user is unsubscribed to /user/queue/message
+     */
+    @EventListener
+    public void handleSessionUnsubscribeEvent(SessionSubscribeEvent event) {
+        final String simpDestination = (String) event.getMessage().getHeaders().get("simpDestination");
+        final Principal user = event.getUser();
+
+        if (simpDestination != null && simpDestination.equals("/user/queue/message") && user != null) {
+            final String username = user.getName();
+            messageBrokerAPI.deleteUserReceiverMessagesCallback(username);
+        }
+    }
 }

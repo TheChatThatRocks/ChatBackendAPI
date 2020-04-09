@@ -32,13 +32,13 @@ public class MessageBrokerAPI {
      * @param callable
      * @return callback id
      */
-    public int addUserReceiverMessagesCallback(BrokerMessagePackage callable, String username) {
+    public boolean addUserReceiverMessagesCallback(BrokerMessagePackage callable, String username) {
         // TODO:
         callbacks.put(username, callable);
-        return 0;
+        return true;
     }
 
-    public void deleteUserReceiverMessagesCallback(int callbackId) {
+    public void deleteUserReceiverMessagesCallback(String username) {
         //callbacks.remove(callbackId);
     }
 
