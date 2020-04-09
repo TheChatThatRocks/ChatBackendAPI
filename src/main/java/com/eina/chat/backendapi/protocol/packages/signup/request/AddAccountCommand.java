@@ -1,24 +1,22 @@
-package com.eina.chat.backendapi.protocol.packages;
+package com.eina.chat.backendapi.protocol.packages.signup.request;
 
-public class AddAccount extends BasicPackage {
+import com.eina.chat.backendapi.protocol.packages.BasicPackage;
+import com.eina.chat.backendapi.protocol.packages.TypesOfMessage;
+import com.fasterxml.jackson.annotation.JsonTypeName;
+
+@JsonTypeName(TypesOfMessage.ADD_ACCOUNT)
+public class AddAccountCommand extends BasicPackage {
     private String username;
     private String password;
 
     @SuppressWarnings("unused")
-    public AddAccount() {
+    public AddAccountCommand() {
         super();
     }
 
     @SuppressWarnings("unused")
-    public AddAccount(int messageId, String username, String password) {
-        super(TypeOfMessage.ADD_ACCOUNT, messageId);
-        this.username = username;
-        this.password = password;
-    }
-
-
-    public AddAccount(TypeOfMessage typeOfMessage, int messageId, String username, String password) {
-        super(typeOfMessage, messageId);
+    public AddAccountCommand(int messageId, String username, String password) {
+        super(messageId);
         this.username = username;
         this.password = password;
     }

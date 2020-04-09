@@ -1,8 +1,13 @@
 package com.eina.chat.backendapi.controller;
 
 import com.eina.chat.backendapi.protocol.packages.*;
+import com.eina.chat.backendapi.protocol.packages.message.request.SendMessageToUserCommand;
+import com.eina.chat.backendapi.protocol.packages.message.response.MessageFromUserResponse;
+import com.eina.chat.backendapi.protocol.packages.message.response.OperationSucceedResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.web.server.LocalServerPort;
@@ -30,6 +35,9 @@ public class MessageControllerTest {
      */
     @Value("${app.back-end-api-ws-uri:}")
     private String backEndURI;
+
+    // Logger
+    private static final Logger LOG = LoggerFactory.getLogger(MessageControllerTest.class);
 
     @Test
     public void sendMessageFromUserToUserBoothOnline() throws Exception {
@@ -81,11 +89,13 @@ public class MessageControllerTest {
         sessionUser1.subscribe("/user/queue/message", new StompFrameHandler() {
             @Override
             public Type getPayloadType(StompHeaders headers) {
-                return MessageFromUser.class;
+                return BasicPackage.class;
             }
 
             @Override
             public void handleFrame(StompHeaders headers, Object payload) {
+                LOG.info("Message arrived: /user/queue/message User 1");
+
                 failure.set(new Exception("Message arrived to User1"));
             }
         });
@@ -93,14 +103,16 @@ public class MessageControllerTest {
         sessionUser2.subscribe("/user/queue/message", new StompFrameHandler() {
             @Override
             public Type getPayloadType(StompHeaders headers) {
-                return MessageFromUser.class;
+                return BasicPackage.class;
             }
 
             @Override
             public void handleFrame(StompHeaders headers, Object payload) {
-                if (payload instanceof MessageFromUser &&
-                        ((MessageFromUser) payload).getMessage().equals(sendMessageContent) &&
-                        ((MessageFromUser) payload).getFrom().equals(nameUser1)) {
+                LOG.info("Message arrived: /user/queue/message User 2");
+
+                if (payload instanceof MessageFromUserResponse &&
+                        ((MessageFromUserResponse) payload).getMessage().equals(sendMessageContent) &&
+                        ((MessageFromUserResponse) payload).getFrom().equals(nameUser1)) {
                     messagesToReceive.countDown();
                 } else {
                     failure.set(new Exception("Message with bad content in User2"));
@@ -111,17 +123,18 @@ public class MessageControllerTest {
         sessionUser1.subscribe("/user/queue/error/message", new StompFrameHandler() {
             @Override
             public Type getPayloadType(StompHeaders headers) {
-                return ErrorResponse.class;
+                return BasicPackage.class;
             }
 
             @Override
             public void handleFrame(StompHeaders headers, Object payload) {
-                ErrorResponse errorResponse = (ErrorResponse) payload;
-                if (errorResponse.getTypeOfMessage() == TypeOfMessage.OPERATION_SUCCEED && errorResponse.getMessageId() == sendMessageID) {
+                LOG.info("Message arrived: /user/queue/error/message User 1");
+
+                BasicPackage errorResponse = (BasicPackage) payload;
+                if (errorResponse.getMessageId() == sendMessageID && errorResponse instanceof OperationSucceedResponse)
                     messagesToReceive.countDown();
-                } else {
+                else
                     failure.set(new Exception("Message with bad content in User1 errors"));
-                }
             }
         });
 
@@ -129,20 +142,22 @@ public class MessageControllerTest {
         sessionUser2.subscribe("/user/queue/error/message", new StompFrameHandler() {
             @Override
             public Type getPayloadType(StompHeaders headers) {
-                return ErrorResponse.class;
+                return BasicPackage.class;
             }
 
             @Override
             public void handleFrame(StompHeaders headers, Object payload) {
+                LOG.info("Message arrived: /user/queue/error/message User 2");
+
                 failure.set(new Exception("Message in User2 errors"));
             }
         });
 
-        sessionUser1.send("/app/message", new SendMessageToUser(sendMessageID, nameUser2, sendMessageContent));
+        sessionUser1.send("/app/message", new SendMessageToUserCommand(sendMessageID, nameUser2, sendMessageContent));
 
         if (!messagesToReceive.await(10, SECONDS)) {
             fail("Test wasn't completed");
-        } else if(failure.get() != null){
+        } else if (failure.get() != null) {
             fail(failure.get().getMessage());
         }
 

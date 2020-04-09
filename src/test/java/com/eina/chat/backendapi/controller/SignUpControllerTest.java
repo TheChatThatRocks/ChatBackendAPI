@@ -1,8 +1,8 @@
 package com.eina.chat.backendapi.controller;
 
-import com.eina.chat.backendapi.errors.WSResponseStatus;
-import com.eina.chat.backendapi.model.User;
 import com.eina.chat.backendapi.protocol.packages.*;
+import com.eina.chat.backendapi.protocol.packages.signup.request.AddAccountCommand;
+import com.eina.chat.backendapi.protocol.packages.signup.response.SignUpSuccessResponse;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -11,19 +11,16 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.web.server.LocalServerPort;
 import org.springframework.messaging.converter.MappingJackson2MessageConverter;
 import org.springframework.messaging.simp.stomp.*;
-import org.springframework.util.concurrent.ListenableFuture;
 import org.springframework.web.socket.WebSocketHttpHeaders;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.messaging.WebSocketStompClient;
 
 import java.lang.reflect.Type;
-import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -63,7 +60,7 @@ public class SignUpControllerTest {
 
         // New user
         //AddAccount addAccount = new AddAccount(messageId, "user", "password");
-        SendCommandPackage sendCommandPackage = new SendCommandPackage(TypeOfMessage.ADD_ACCOUNT, messageId, new AddAccountArgument("user", "password"));
+        AddAccountCommand sendCommandPackage = new AddAccountCommand(messageId, "user", "password");
 
         // Session creation
         StompHeaders connectHeadersUser1 = new StompHeaders();
@@ -86,15 +83,15 @@ public class SignUpControllerTest {
         session.subscribe("/user/queue/error/sign-up", new StompSessionHandlerAdapter() {
             @Override
             public Type getPayloadType(StompHeaders headers) {
-                return ErrorResponse.class;
+                return BasicPackage.class;
             }
 
             @Override
             public void handleFrame(StompHeaders headers, Object payload) {
-                ErrorResponse errorResponse = (ErrorResponse) payload;
-                if (errorResponse.getMessageId() == messageId && errorResponse.getTypeOfMessage() == TypeOfMessage.SIGN_UP_SUCCESS) {
+                BasicPackage errorResponse = (BasicPackage) payload;
+                if(errorResponse.getMessageId() == messageId && errorResponse instanceof SignUpSuccessResponse)
                     messagesToReceive.countDown();
-                } else {
+                else {
                     failure.set(new Exception("Unexpected message received or sign-up fail"));
                 }
             }

@@ -1,27 +1,25 @@
-package com.eina.chat.backendapi.protocol.packages;
+package com.eina.chat.backendapi.protocol.packages.message.request;
 
-public class SendMessageToUser extends BasicPackage {
+import com.eina.chat.backendapi.protocol.packages.BasicPackage;
+import com.eina.chat.backendapi.protocol.packages.TypesOfMessage;
+import com.fasterxml.jackson.annotation.JsonTypeName;
+
+@JsonTypeName(TypesOfMessage.SEND_MESSAGE_TO_USER)
+public class SendMessageToUserCommand extends BasicPackage {
     private String username;
     private String message;
 
     @SuppressWarnings("unused")
-    public SendMessageToUser() {
+    public SendMessageToUserCommand() {
         super();
     }
 
     @SuppressWarnings("unused")
-    public SendMessageToUser(TypeOfMessage typeOfMessage, int messageId, String username, String message) {
-        super(typeOfMessage, messageId);
+    public SendMessageToUserCommand(int messageId, String username, String message) {
+        super(messageId);
         this.username = username;
         this.message = message;
     }
-
-    public SendMessageToUser(int messageId, String username, String message) {
-        super(TypeOfMessage.SEND_MESSAGE_TO_USER, messageId);
-        this.username = username;
-        this.message = message;
-    }
-
 
     public String getUsername() {
         return username;

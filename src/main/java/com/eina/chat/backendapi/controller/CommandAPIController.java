@@ -1,9 +1,12 @@
 package com.eina.chat.backendapi.controller;
 
 import com.eina.chat.backendapi.protocol.packages.*;
+import com.eina.chat.backendapi.protocol.packages.message.request.SendMessageToUserCommand;
+import com.eina.chat.backendapi.protocol.packages.message.response.MessageFromUserResponse;
+import com.eina.chat.backendapi.protocol.packages.message.response.OperationSucceedResponse;
+import com.eina.chat.backendapi.protocol.packages.message.response.SendMessageToUserErrorResponse;
+import com.eina.chat.backendapi.protocol.packages.message.response.UnknownCommandResponse;
 import com.eina.chat.backendapi.service.MessageBrokerAPI;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -16,12 +19,7 @@ import org.springframework.web.socket.messaging.SessionSubscribeEvent;
 import java.security.Principal;
 
 @Controller
-public class UserToUserMessageController {
-    /**
-     * Logger instance
-     */
-    final private static Logger logger = LoggerFactory.getLogger(UserToUserMessageController.class);
-
+public class CommandAPIController {
     /**
      * Simple messaging template
      */
@@ -36,12 +34,17 @@ public class UserToUserMessageController {
 
     @MessageMapping("/message")
     @SendToUser("/queue/error/message")
-    public BasicPackage userSendMessageToUser(@Payload SendMessageToUser sendMessageToUser, Principal principal) {
-        if (messageBrokerAPI.sendMessageToUser(principal.getName(), sendMessageToUser.getUsername(), sendMessageToUser.getMessage())) {
-            return new ErrorResponse(TypeOfMessage.OPERATION_SUCCEED, sendMessageToUser.getMessageId(), "OK");
-        } else {
-            return new ErrorResponse(TypeOfMessage.SEND_MESSAGE_TO_USER_ERROR, sendMessageToUser.getMessageId(), "Not found");
-        }
+    public BasicPackage commandAPIMessageHandler(@Payload BasicPackage basicPackage, Principal principal) {
+        if (basicPackage instanceof SendMessageToUserCommand) {
+            SendMessageToUserCommand sendMessageToUser = (SendMessageToUserCommand) basicPackage;
+            if (messageBrokerAPI.sendMessageToUser(principal.getName(),
+                    sendMessageToUser.getUsername(),
+                    sendMessageToUser.getMessage()))
+                return new OperationSucceedResponse(sendMessageToUser.getMessageId());
+            else
+                return new SendMessageToUserErrorResponse(sendMessageToUser.getMessageId());
+
+        } else return new UnknownCommandResponse(basicPackage.getMessageId());
     }
 
     /**
@@ -59,7 +62,7 @@ public class UserToUserMessageController {
                 public void onUserMessageArrive(String fromUsername, String message) {
                     simpMessagingTemplate.convertAndSendToUser(username,
                             "/queue/message",
-                            new MessageFromUser(fromUsername, message));
+                            new MessageFromUserResponse(fromUsername, message));
                 }
 
                 @Override
