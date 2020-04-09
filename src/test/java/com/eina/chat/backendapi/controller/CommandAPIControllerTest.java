@@ -204,7 +204,7 @@ public class CommandAPIControllerTest {
 
         if (failure.get() != null) {
             fail(failure.get().getMessage());
-        } else if (hasReceivedMessage) {
+        } else if (!hasReceivedMessage) {
             fail("Test wasn't completed");
         }
     }
@@ -288,7 +288,7 @@ public class CommandAPIControllerTest {
 
         if (failureUser1.get() != null) {
             fail(failureUser1.get().getMessage());
-        } else if (hasReceivedMessageUser1) {
+        } else if (!hasReceivedMessageUser1) {
             fail("Test wasn't completed User1");
         }
 
@@ -342,7 +342,7 @@ public class CommandAPIControllerTest {
 
         if (failureUser2.get() != null) {
             fail(failureUser2.get().getMessage());
-        } else if (hasReceivedMessage) {
+        } else if (!hasReceivedMessage) {
             fail("Test wasn't completed User2");
         }
     }

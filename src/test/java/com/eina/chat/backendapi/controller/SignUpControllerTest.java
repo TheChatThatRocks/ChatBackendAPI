@@ -112,7 +112,7 @@ public class SignUpControllerTest {
 
         if (failure.get() != null) {
             fail(failure.get().getMessage());
-        } else if (hasReceivedMessage) {
+        } else if (!hasReceivedMessage) {
             fail("Test wasn't completed");
         }
     }
@@ -175,7 +175,7 @@ public class SignUpControllerTest {
 
         if (failure.get() != null) {
             fail(failure.get().getMessage());
-        } else if (hasReceivedMessage) {
+        } else if (!hasReceivedMessage) {
             fail("Test wasn't completed");
         }
     }
