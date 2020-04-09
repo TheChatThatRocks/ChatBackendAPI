@@ -7,8 +7,9 @@ import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
 import org.springframework.messaging.support.MessageHeaderAccessor;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
+
 import org.springframework.stereotype.Component;
 
 @Component
@@ -23,21 +24,14 @@ public class AuthChannelInterceptorAdapter implements ChannelInterceptor {
     public Message<?> preSend(final Message<?> message, final MessageChannel channel) throws AuthenticationException {
         final StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
         if (accessor != null && StompCommand.CONNECT == accessor.getCommand()) {
-            final String username = accessor.getFirstNativeHeader(USERNAME_HEADER);
+            String username = accessor.getFirstNativeHeader(USERNAME_HEADER);
+            String password = accessor.getFirstNativeHeader(PASSWORD_HEADER);
 
-            // TODO: Password siempre aparece como protected
-            final String password = accessor.getFirstNativeHeader(PASSWORD_HEADER);
-
-            System.out.println("Credentials obtained: " + username + "|n|" + password + "|n");
-
-            final UsernamePasswordAuthenticationToken user = webSocketAuthenticatorService.getAuthenticatedOrFail(username, password);
-
-            if (user.isAuthenticated()) {
-                System.out.println("Esta autenticado --------------------------------------------");
-            } else {
-                System.out.println("No Esta autenticado --------------------------------------------");
+            // If user and password is provided, try to authenticate the user
+            if (username != null && password != null) {
+                AbstractAuthenticationToken user = webSocketAuthenticatorService.getAuthenticationToken(username, password);
+                accessor.setUser(user);
             }
-            accessor.setUser(user);
         }
         return message;
     }

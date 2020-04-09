@@ -59,20 +59,10 @@ public class SignUpControllerTest {
         final int messageId = 1;
 
         // New user
-        //AddAccount addAccount = new AddAccount(messageId, "user", "password");
         AddAccountCommand sendCommandPackage = new AddAccountCommand(messageId, "user", "password");
 
-        // Session creation
-        StompHeaders connectHeadersUser1 = new StompHeaders();
-        connectHeadersUser1.add("username", "nameUser1");
-        connectHeadersUser1.add("password", "passUser1");
-
-        // TODO: Check why fail without credentials
-        StompSession session = this.stompClient.connect("ws://" + backEndURI + ":{port}/ws", this.headers, connectHeadersUser1, new StompSessionHandlerAdapter() {
+        StompSession session = this.stompClient.connect("ws://" + backEndURI + ":{port}/ws", this.headers, new StompSessionHandlerAdapter() {
         }, this.port).get(2, SECONDS);
-
-//        StompSession session = this.stompClient.connect("ws://" + backEndURI + ":{port}/ws", this.headers, new StompSessionHandlerAdapter() {
-//        }, this.port).get(2, SECONDS);
 
         // Check if connection have failed
         assert (session != null && session.isConnected());

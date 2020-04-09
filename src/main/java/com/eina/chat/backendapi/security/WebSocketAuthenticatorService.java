@@ -1,6 +1,10 @@
 package com.eina.chat.backendapi.security;
 
-import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
+import com.eina.chat.backendapi.model.User;
+import com.eina.chat.backendapi.service.UserAccountDatabaseAPI;
+import lombok.NonNull;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
@@ -8,34 +12,20 @@ import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 
-// Based on: https://stackoverflow.com/questions/45405332/websocket-authentication-and-authorization-in-spring
 @Service
 public class WebSocketAuthenticatorService {
-    // This method MUST return a UsernamePasswordAuthenticationToken instance, the spring security chain
-    // is testing it with 'instanceof' later on. So don't use a subclass of it or any other class
-    public UsernamePasswordAuthenticationToken getAuthenticatedOrFail(final String username, final String password)
-            throws AuthenticationException {
-        System.out.println("Inside autenticator service --------------------------");
-        if (username == null || username.trim().isEmpty()) {
-            throw new AuthenticationCredentialsNotFoundException("Username was null or empty");
-        }
-        System.out.println("Actual password: " + password + "|n");
-        if (password == null || password.trim().isEmpty()) {
-            System.out.println("Password empty --------------------------");
-            throw new AuthenticationCredentialsNotFoundException("Password was null or empty");
-        }
-        // Add your own logic for retrieving user in fetchUserFromDb()
-        // TODO: Implement user checker
-//        if (fetchUserFromDb(username, password) == null) {
-//            throw new BadCredentialsException("Bad credentials for user " + username);
-//        }
+    @Autowired
+    private UserAccountDatabaseAPI userAccountDatabaseAPI;
 
-        System.out.println("Out autenticator service --------------------------");
-        // null credentials, we do not pass the password along
-        return new UsernamePasswordAuthenticationToken(
-                username,
-                null,
-                Collections.singleton((GrantedAuthority) () -> "USER") // MUST provide at least one role
-        );
+    public UsernamePasswordAuthenticationToken getAuthenticationToken(@NonNull String username, @NonNull String password) throws AuthenticationException {
+        if (userAccountDatabaseAPI.checkUserCredentials(new User(username, password))) {
+            // Null credentials
+            return new UsernamePasswordAuthenticationToken(
+                    username,
+                    null,
+                    Collections.singleton((GrantedAuthority) () -> AccessLevels.ROLE_USER)
+            );
+        } else
+            throw new BadCredentialsException("Bad credentials for user " + username);
     }
 }
