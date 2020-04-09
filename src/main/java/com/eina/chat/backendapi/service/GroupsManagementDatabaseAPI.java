@@ -3,6 +3,6 @@ package com.eina.chat.backendapi.service;
 import org.springframework.stereotype.Service;
 
 @Service
-public class GroupsManagmentDatabaseAPI {
+public class GroupsManagementDatabaseAPI {
     // TODO:
 }
