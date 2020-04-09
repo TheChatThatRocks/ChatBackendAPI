@@ -1,9 +1,7 @@
 package com.eina.chat.backendapi.controller;
 
 import com.eina.chat.backendapi.model.User;
-import com.eina.chat.backendapi.protocol.packages.AddAccount;
-import com.eina.chat.backendapi.protocol.packages.ErrorResponse;
-import com.eina.chat.backendapi.protocol.packages.TypeOfMessage;
+import com.eina.chat.backendapi.protocol.packages.*;
 import com.eina.chat.backendapi.service.UserAccountDatabaseAPI;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -20,11 +18,15 @@ public class SignUpController {
 
     @MessageMapping("/sign-up")
     @SendToUser("/queue/error/sign-up")
-    public ErrorResponse signUpUser(AddAccount addAccount) {
-        if (userAccountDatabaseAPI.createUser(new User(addAccount.getUsername(), addAccount.getPassword()))) {
-            return new ErrorResponse(TypeOfMessage.SIGN_UP_SUCCESS, addAccount.getMessageId(), "OK");
+    public ErrorResponse signUpUser(SendCommandPackage sendCommandPackage) {
+        if (sendCommandPackage.getTypeOfMessage() == TypeOfMessage.ADD_ACCOUNT && sendCommandPackage.getArgument() instanceof AddAccountArgument) {
+            if (userAccountDatabaseAPI.createUser(new User(((AddAccountArgument) sendCommandPackage.getArgument()).getUsername(), ((AddAccountArgument) sendCommandPackage.getArgument()).getPassword()))) {
+                return new ErrorResponse(TypeOfMessage.SIGN_UP_SUCCESS, sendCommandPackage.getMessageId(), "OK");
+            } else {
+                return new ErrorResponse(TypeOfMessage.SIGN_UP_ERROR, sendCommandPackage.getMessageId(), "Duplicated account");
+            }
         } else {
-            return new ErrorResponse(TypeOfMessage.SIGN_UP_ERROR, addAccount.getMessageId(), "Duplicated account");
+            return new ErrorResponse(TypeOfMessage.SIGN_UP_ERROR, sendCommandPackage.getMessageId(), "Duplicated account");
         }
     }
 }

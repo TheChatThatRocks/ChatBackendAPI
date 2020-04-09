@@ -2,9 +2,7 @@ package com.eina.chat.backendapi.controller;
 
 import com.eina.chat.backendapi.errors.WSResponseStatus;
 import com.eina.chat.backendapi.model.User;
-import com.eina.chat.backendapi.protocol.packages.AddAccount;
-import com.eina.chat.backendapi.protocol.packages.ErrorResponse;
-import com.eina.chat.backendapi.protocol.packages.TypeOfMessage;
+import com.eina.chat.backendapi.protocol.packages.*;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -64,7 +62,8 @@ public class SignUpControllerTest {
         final int messageId = 1;
 
         // New user
-        AddAccount addAccount = new AddAccount(messageId, "user", "password");
+        //AddAccount addAccount = new AddAccount(messageId, "user", "password");
+        SendCommandPackage sendCommandPackage = new SendCommandPackage(TypeOfMessage.ADD_ACCOUNT, messageId, new AddAccountArgument("user", "password"));
 
         // Session creation
         StompHeaders connectHeadersUser1 = new StompHeaders();
@@ -72,11 +71,11 @@ public class SignUpControllerTest {
         connectHeadersUser1.add("password", "passUser1");
 
         // TODO: Check why fail without credentials
-//        StompSession session = this.stompClient.connect("ws://" + backEndURI + ":{port}/ws", this.headers, connectHeadersUser1, new StompSessionHandlerAdapter() {
-//        }, this.port).get(2, SECONDS);
-
-        StompSession session = this.stompClient.connect("ws://" + backEndURI + ":{port}/ws", this.headers, new StompSessionHandlerAdapter() {
+        StompSession session = this.stompClient.connect("ws://" + backEndURI + ":{port}/ws", this.headers, connectHeadersUser1, new StompSessionHandlerAdapter() {
         }, this.port).get(2, SECONDS);
+
+//        StompSession session = this.stompClient.connect("ws://" + backEndURI + ":{port}/ws", this.headers, new StompSessionHandlerAdapter() {
+//        }, this.port).get(2, SECONDS);
 
         // Check if connection have failed
         assert (session != null && session.isConnected());
@@ -101,7 +100,7 @@ public class SignUpControllerTest {
             }
         });
 
-        session.send("/app/sign-up", addAccount);
+        session.send("/app/sign-up", sendCommandPackage);
 
         if (!messagesToReceive.await(10, TimeUnit.SECONDS)) {
             fail("Test wasn't completed");
