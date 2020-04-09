@@ -1,11 +1,13 @@
 package com.eina.chat.backendapi.controller;
 
+import com.eina.chat.backendapi.model.User;
 import com.eina.chat.backendapi.protocol.packages.*;
 import com.eina.chat.backendapi.protocol.packages.signup.request.AddAccountCommand;
+import com.eina.chat.backendapi.protocol.packages.signup.response.SignUpErrorResponse;
 import com.eina.chat.backendapi.protocol.packages.signup.response.SignUpSuccessResponse;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
+import com.eina.chat.backendapi.service.UserAccountDatabaseAPI;
+import org.junit.jupiter.api.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.web.server.LocalServerPort;
@@ -29,22 +31,32 @@ public class SignUpControllerTest {
     @LocalServerPort
     private int port;
 
-    private WebSocketStompClient stompClient;
-
-    private final WebSocketHttpHeaders headers = new WebSocketHttpHeaders();
-
     /**
      * Uri of the back end
      */
     @Value("${app.back-end-api-ws-uri:}")
     private String backEndURI;
 
-    @BeforeAll
-    public void setup() {
-        StandardWebSocketClient standardWebSocketClient = new StandardWebSocketClient();
+    // User database service
+    @Autowired
+    private UserAccountDatabaseAPI userAccountDatabaseAPI;
 
-        this.stompClient = new WebSocketStompClient(standardWebSocketClient);
-        this.stompClient.setMessageConverter(new MappingJackson2MessageConverter());
+    // Test user data
+    final private String username = "testusername";
+    final private String password = "testpassword";
+
+    @BeforeEach
+    public void setupForEach() {
+        if (userAccountDatabaseAPI.checkUserExist(username)) {
+            userAccountDatabaseAPI.deleteUser(username);
+        }
+    }
+
+    @AfterEach
+    public void deleteForEach() {
+        if (userAccountDatabaseAPI.checkUserExist(username)) {
+            userAccountDatabaseAPI.deleteUser(username);
+        }
     }
 
     /**
@@ -52,6 +64,11 @@ public class SignUpControllerTest {
      */
     @Test
     public void newUser() throws Exception {
+        // Connection variables
+        StandardWebSocketClient standardWebSocketClient = new StandardWebSocketClient();
+        WebSocketStompClient stompClient = new WebSocketStompClient(standardWebSocketClient);
+        stompClient.setMessageConverter(new MappingJackson2MessageConverter());
+
         // Failure variable
         final AtomicReference<Throwable> failure = new AtomicReference<>();
 
@@ -59,9 +76,9 @@ public class SignUpControllerTest {
         final int messageId = 1;
 
         // New user
-        AddAccountCommand sendCommandPackage = new AddAccountCommand(messageId, "user", "password");
+        AddAccountCommand sendCommandPackage = new AddAccountCommand(messageId, username, password);
 
-        StompSession session = this.stompClient.connect("ws://" + backEndURI + ":{port}/ws", this.headers, new StompSessionHandlerAdapter() {
+        StompSession session = stompClient.connect("ws://" + backEndURI + ":{port}/ws", new WebSocketHttpHeaders(), new StompSessionHandlerAdapter() {
         }, this.port).get(2, SECONDS);
 
         // Check if connection have failed
@@ -79,7 +96,7 @@ public class SignUpControllerTest {
             @Override
             public void handleFrame(StompHeaders headers, Object payload) {
                 BasicPackage errorResponse = (BasicPackage) payload;
-                if(errorResponse.getMessageId() == messageId && errorResponse instanceof SignUpSuccessResponse)
+                if (errorResponse.getMessageId() == messageId && errorResponse instanceof SignUpSuccessResponse)
                     messagesToReceive.countDown();
                 else {
                     failure.set(new Exception("Unexpected message received or sign-up fail"));
@@ -89,20 +106,77 @@ public class SignUpControllerTest {
 
         session.send("/app/sign-up", sendCommandPackage);
 
-        if (!messagesToReceive.await(10, TimeUnit.SECONDS)) {
-            fail("Test wasn't completed");
-        } else if (failure.get() != null) {
-            fail(failure.get().getMessage());
-        }
+        boolean hasReceivedMessage = messagesToReceive.await(5, TimeUnit.SECONDS);
 
         session.disconnect();
+
+        if (failure.get() != null) {
+            fail(failure.get().getMessage());
+        } else if (hasReceivedMessage) {
+            fail("Test wasn't completed");
+        }
     }
 
     /**
      * Test signing up a user that exist yet
      */
     @Test
-    public void duplicatedUser() {
-        // TODO: Implement method
+    public void duplicatedUser() throws Exception {
+        // Create user
+        if (!userAccountDatabaseAPI.checkUserExist(username)) {
+            userAccountDatabaseAPI.createUser(new User(username, password));
+        }
+
+        // Connection variables
+        StandardWebSocketClient standardWebSocketClient = new StandardWebSocketClient();
+        WebSocketStompClient stompClient = new WebSocketStompClient(standardWebSocketClient);
+        stompClient.setMessageConverter(new MappingJackson2MessageConverter());
+
+        // Failure variable
+        final AtomicReference<Throwable> failure = new AtomicReference<>();
+
+        // Message id
+        final int messageId = 1;
+
+        // New user
+        AddAccountCommand sendCommandPackage = new AddAccountCommand(messageId, username, password);
+
+        StompSession session = stompClient.connect("ws://" + backEndURI + ":{port}/ws", new WebSocketHttpHeaders(), new StompSessionHandlerAdapter() {
+        }, this.port).get(2, SECONDS);
+
+        // Check if connection have failed
+        assert (session != null && session.isConnected());
+
+        final CountDownLatch messagesToReceive = new CountDownLatch(1);
+
+        // Subscribe
+        session.subscribe("/user/queue/error/sign-up", new StompSessionHandlerAdapter() {
+            @Override
+            public Type getPayloadType(StompHeaders headers) {
+                return BasicPackage.class;
+            }
+
+            @Override
+            public void handleFrame(StompHeaders headers, Object payload) {
+                BasicPackage errorResponse = (BasicPackage) payload;
+                if (errorResponse.getMessageId() == messageId && errorResponse instanceof SignUpErrorResponse)
+                    messagesToReceive.countDown();
+                else {
+                    failure.set(new Exception("Unexpected message received or sign-up fail"));
+                }
+            }
+        });
+
+        session.send("/app/sign-up", sendCommandPackage);
+
+        boolean hasReceivedMessage = messagesToReceive.await(5, TimeUnit.SECONDS);
+
+        session.disconnect();
+
+        if (failure.get() != null) {
+            fail(failure.get().getMessage());
+        } else if (hasReceivedMessage) {
+            fail("Test wasn't completed");
+        }
     }
 }
