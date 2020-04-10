@@ -39,23 +39,33 @@ public class MessageBrokerAPITest {
             @Override
             public void onGroupMessageArrive(String user, String group, String message) {
             }
+
+            @Override
+            public void onUserFileArrive(String username, byte[] file) {
+
+            }
+
+            @Override
+            public void onGroupFileArrive(String username, String group, byte[] file) {
+
+            }
         }
 
         messageBrokerAPI.createUser("user2");
         messageBrokerAPI.createUser("user1");
-        messageBrokerAPI.connectUser("user1", new UserListener());
-        messageBrokerAPI.connectUser("user2", new UserListener());
+        messageBrokerAPI.addUserReceiverMessagesCallback("user1", new UserListener());
+        messageBrokerAPI.addUserReceiverMessagesCallback("user2", new UserListener());
         messageBrokerAPI.sendMessageToUser("user1", "user2", "hi 2");
         messageBrokerAPI.sendMessageToUser("user2", "user1", "hi 1");
         assert (receiver2.await(5, TimeUnit.SECONDS)): "User2 hasn't received message";
 
         // Check user 2 doesn't receive msg until it's connected
-        messageBrokerAPI.disconnectUser("user1");
+        messageBrokerAPI.deleteUserReceiverMessagesCallback("user1");
         messageBrokerAPI.sendMessageToUser("user2", "user1", "hi 1 again");
         assert (!receiver1.await(5, TimeUnit.SECONDS)): "User1 received message while disconnected";
-        messageBrokerAPI.connectUser("user1", new UserListener());
+        messageBrokerAPI.addUserReceiverMessagesCallback("user1", new UserListener());
         assert (receiver1.await(5, TimeUnit.SECONDS)): "User1 hasn't received some messages";
-        messageBrokerAPI.disconnectUser("user1");
-        messageBrokerAPI.disconnectUser("user2");
+        messageBrokerAPI.deleteUserReceiverMessagesCallback("user1");
+        messageBrokerAPI.deleteUserReceiverMessagesCallback("user2");
     }
 }
