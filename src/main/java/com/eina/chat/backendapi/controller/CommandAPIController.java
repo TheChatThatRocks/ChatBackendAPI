@@ -10,6 +10,8 @@ import com.eina.chat.backendapi.rabbitmq.ReceiveHandler;
 import com.eina.chat.backendapi.service.EncryptionAPI;
 import com.eina.chat.backendapi.service.MessageBrokerAPI;
 import com.eina.chat.backendapi.service.UserAccountDatabaseAPI;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -42,12 +44,17 @@ public class CommandAPIController {
     @Autowired
     private MessageBrokerAPI messageBrokerAPI;
 
-
     /**
      * Database API
      */
     @Autowired
     private UserAccountDatabaseAPI userAccountDatabaseAPI;
+
+    /**
+     * Logger
+     */
+    @Autowired
+    private static final Logger logger = LoggerFactory.getLogger(CommandAPIController.class);
 
     @MessageMapping("/message")
     @SendToUser("/queue/error/message")
@@ -71,17 +78,19 @@ public class CommandAPIController {
      */
     @EventListener
     public void handleSessionSubscribeEvent(SessionSubscribeEvent event) {
-        final String simpDestination = (String) event.getMessage().getHeaders().get("simpDestination");
-        final Principal user = event.getUser();
+        String simpDestination = (String) event.getMessage().getHeaders().get("simpDestination");
+        simpDestination = simpDestination != null ? simpDestination : "";
 
-        if (simpDestination != null && simpDestination.equals("/user/queue/message") && user != null) {
-            final String username = user.getName();
+        String username = event.getUser() != null ? event.getUser().getName() : "";
 
-            System.out.println("Callback creado-----------" + username);
+        // Log
+        logger.info("Session Subscribe Event on endpoint: " + simpDestination + " by user: " + username);
+
+        if (simpDestination.equals("/user/queue/message") && !username.isBlank()) {
             messageBrokerAPI.addUserReceiverMessagesCallback(username, new ReceiveHandler() {
                 @Override
                 public void onUserMessageArrive(String fromUsername, String message) {
-                    System.out.println("Message send -----------");
+                    logger.debug("User message arrive callback with message from: " + fromUsername);
                     simpMessagingTemplate.convertAndSendToUser(username,
                             "/queue/message",
                             new MessageFromUserResponse(fromUsername, message));
@@ -111,12 +120,16 @@ public class CommandAPIController {
      */
     @EventListener
     public void handleSessionUnsubscribeEvent(SessionSubscribeEvent event) {
-        final String simpDestination = (String) event.getMessage().getHeaders().get("simpDestination");
-        final Principal user = event.getUser();
+        String simpDestination = (String) event.getMessage().getHeaders().get("simpDestination");
+        simpDestination = simpDestination != null ? simpDestination : "";
 
-        if (simpDestination != null && simpDestination.equals("/user/queue/message") && user != null) {
-            System.out.println("Callback destruido por unsubscription-----------" + user.getName());
-            final String username = user.getName();
+        String username = event.getUser() != null ? event.getUser().getName() : "";
+
+        // Log
+        logger.info("Session Unsubscribe Event on endpoint: " + simpDestination + " by user: " + username);
+
+        // Unsubscription
+        if (simpDestination.equals("/user/queue/message") && !username.isBlank()) {
             messageBrokerAPI.deleteUserReceiverMessagesCallback(username);
         }
     }

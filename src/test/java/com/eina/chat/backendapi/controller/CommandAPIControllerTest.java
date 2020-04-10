@@ -152,7 +152,9 @@ public class CommandAPIControllerTest {
 
                 failure.set(new Exception("Message arrived to User1"));
             }
+
         });
+
 
         sessionUser2.subscribe("/user/queue/message", new StompFrameHandler() {
             @Override
@@ -207,11 +209,12 @@ public class CommandAPIControllerTest {
             }
         });
 
+        // Allow subscriptions to set up
+        Thread.sleep(1000);
+
         sessionUser1.send("/app/message", new SendMessageToUserCommand(sendMessageID, nameUser2, sendMessageContent));
 
         boolean hasReceivedMessage = messagesToReceive.await(5, TimeUnit.SECONDS);
-
-        System.out.println("Antes del disconnect ");
 
         sessionUser1.disconnect();
         sessionUser2.disconnect();
@@ -294,6 +297,8 @@ public class CommandAPIControllerTest {
             }
         });
 
+        // Allow subscriptions to set up
+        Thread.sleep(1000);
 
         sessionUser1.send("/app/message", new SendMessageToUserCommand(sendMessageID, nameUser2, sendMessageContent));
 
@@ -350,9 +355,12 @@ public class CommandAPIControllerTest {
             }
         });
 
-        sessionUser2.disconnect();
+        // Allow subscriptions to set up
+        Thread.sleep(1000);
 
         boolean hasReceivedMessage = messagesToReceiveUser2.await(5, TimeUnit.SECONDS);
+
+        sessionUser2.disconnect();
 
         if (failureUser2.get() != null) {
             fail(failureUser2.get().getMessage());
