@@ -2,6 +2,9 @@ package com.eina.chat.backendapi.controller;
 
 import com.eina.chat.backendapi.protocol.packages.*;
 import com.eina.chat.backendapi.protocol.packages.message.request.*;
+import com.eina.chat.backendapi.protocol.packages.message.response.FileFromRoomResponse;
+import com.eina.chat.backendapi.protocol.packages.message.response.FileFromUserResponse;
+import com.eina.chat.backendapi.protocol.packages.message.response.MessageFromRoomResponse;
 import com.eina.chat.backendapi.protocol.packages.message.response.MessageFromUserResponse;
 import com.eina.chat.backendapi.protocol.packages.common.response.OperationSucceedResponse;
 import com.eina.chat.backendapi.protocol.packages.common.response.OperationFailResponse;
@@ -265,18 +268,27 @@ public class CommandAPIController {
                 }
 
                 @Override
-                public void onGroupMessageArrive(String user, String group, String message) {
-                    // TODO: Complete
+                public void onGroupMessageArrive(String fromUsername, String group, String message) {
+                    logger.debug("Group message arrive callback with message from: " + fromUsername + " and group:" + group);
+                    simpMessagingTemplate.convertAndSendToUser(username,
+                            "/queue/message",
+                            new MessageFromRoomResponse(fromUsername, group, encryptionAPI.symmetricDecryptString(message)));
                 }
 
                 @Override
-                public void onUserFileArrive(String username, byte[] file) {
-                    // TODO: Complete
+                public void onUserFileArrive(String fromUsername, byte[] file) {
+                    logger.debug("User file arrive callback with message from: " + fromUsername);
+                    simpMessagingTemplate.convertAndSendToUser(username,
+                            "/queue/message",
+                            new FileFromUserResponse(fromUsername, encryptionAPI.symmetricDecryptFile(file)));
                 }
 
                 @Override
-                public void onGroupFileArrive(String username, String group, byte[] file) {
-                    // TODO: Complete
+                public void onGroupFileArrive(String fromUsername, String group, byte[] file) {
+                    logger.debug("Group file arrive callback with message from: " + fromUsername + " and group:" + group);
+                    simpMessagingTemplate.convertAndSendToUser(username,
+                            "/queue/message",
+                            new FileFromRoomResponse(fromUsername, group, encryptionAPI.symmetricDecryptFile(file)));
                 }
 
             });
