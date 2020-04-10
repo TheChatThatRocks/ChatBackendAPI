@@ -27,6 +27,7 @@ repositories {
 
 
 dependencies {
+    // Spring
     implementation 'org.springframework.boot:spring-boot-starter-amqp'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.security:spring-security-messaging'
@@ -47,6 +48,10 @@ dependencies {
         exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
     }
     testImplementation 'org.springframework.security:spring-security-test'
+
+    // Apache common lang
+    compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.10'
+
 }
 
 test {

@@ -5,6 +5,8 @@ import com.eina.chat.backendapi.protocol.packages.*;
 import com.eina.chat.backendapi.protocol.packages.signup.request.AddAccountCommand;
 import com.eina.chat.backendapi.protocol.packages.signup.response.SignUpErrorResponse;
 import com.eina.chat.backendapi.protocol.packages.signup.response.SignUpSuccessResponse;
+import com.eina.chat.backendapi.security.AccessLevels;
+import com.eina.chat.backendapi.service.MessageBrokerAPI;
 import com.eina.chat.backendapi.service.UserAccountDatabaseAPI;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,6 +43,10 @@ public class SignUpControllerTest {
     @Autowired
     private UserAccountDatabaseAPI userAccountDatabaseAPI;
 
+    // RabbitMQ API
+    @Autowired
+    private MessageBrokerAPI messageBrokerAPI;
+
     // Test user data
     final private String username = "testusername";
     final private String password = "testpassword";
@@ -49,6 +55,7 @@ public class SignUpControllerTest {
     public void setupForEach() {
         if (userAccountDatabaseAPI.checkUserExist(username)) {
             userAccountDatabaseAPI.deleteUser(username);
+            messageBrokerAPI.deleteUser(username);
         }
     }
 
@@ -56,6 +63,7 @@ public class SignUpControllerTest {
     public void deleteForEach() {
         if (userAccountDatabaseAPI.checkUserExist(username)) {
             userAccountDatabaseAPI.deleteUser(username);
+            messageBrokerAPI.deleteUser(username);
         }
     }
 
@@ -124,7 +132,8 @@ public class SignUpControllerTest {
     public void duplicatedUser() throws Exception {
         // Create user
         if (!userAccountDatabaseAPI.checkUserExist(username)) {
-            userAccountDatabaseAPI.createUser(new User(username, password));
+            userAccountDatabaseAPI.createUser(username, password, AccessLevels.ROLE_USER);
+            messageBrokerAPI.createUser(username);
         }
 
         // Connection variables

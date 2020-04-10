@@ -7,6 +7,7 @@ import com.eina.chat.backendapi.protocol.packages.message.response.OperationSucc
 import com.eina.chat.backendapi.protocol.packages.message.response.SendMessageToUserErrorResponse;
 import com.eina.chat.backendapi.protocol.packages.message.response.UnknownCommandResponse;
 import com.eina.chat.backendapi.rabbitmq.ReceiveHandler;
+import com.eina.chat.backendapi.service.EncryptionAPI;
 import com.eina.chat.backendapi.service.MessageBrokerAPI;
 import com.eina.chat.backendapi.service.UserAccountDatabaseAPI;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +30,13 @@ public class CommandAPIController {
     private SimpMessagingTemplate simpMessagingTemplate;
 
     /**
+     * Encryption API
+     */
+    // TODO: Add encryption before comunications
+    @Autowired
+    private EncryptionAPI encryptionAPI;
+
+    /**
      * RabbitMQ API
      */
     @Autowired
@@ -46,12 +54,13 @@ public class CommandAPIController {
     public BasicPackage commandAPIMessageHandler(@Payload BasicPackage basicPackage, Principal principal) {
         if (basicPackage instanceof SendMessageToUserCommand) {
             SendMessageToUserCommand sendMessageToUser = (SendMessageToUserCommand) basicPackage;
-            if(userAccountDatabaseAPI.checkUserExist(sendMessageToUser.getUsername())){
+
+            if (userAccountDatabaseAPI.checkUserExist(sendMessageToUser.getUsername())) {
+                System.out.println("Message send en api -----------" + sendMessageToUser.getUsername());
                 messageBrokerAPI.sendMessageToUser(principal.getName(), sendMessageToUser.getUsername(),
                         sendMessageToUser.getMessage());
                 return new OperationSucceedResponse(sendMessageToUser.getMessageId());
-            }
-            else
+            } else
                 return new SendMessageToUserErrorResponse(sendMessageToUser.getMessageId());
 
         } else return new UnknownCommandResponse(basicPackage.getMessageId());
@@ -67,9 +76,12 @@ public class CommandAPIController {
 
         if (simpDestination != null && simpDestination.equals("/user/queue/message") && user != null) {
             final String username = user.getName();
-            messageBrokerAPI.connectUser(username, new ReceiveHandler() {
+
+            System.out.println("Callback creado-----------" + username);
+            messageBrokerAPI.addUserReceiverMessagesCallback(username, new ReceiveHandler() {
                 @Override
                 public void onUserMessageArrive(String fromUsername, String message) {
+                    System.out.println("Message send -----------");
                     simpMessagingTemplate.convertAndSendToUser(username,
                             "/queue/message",
                             new MessageFromUserResponse(fromUsername, message));
@@ -77,6 +89,16 @@ public class CommandAPIController {
 
                 @Override
                 public void onGroupMessageArrive(String user, String group, String message) {
+                    // TODO: Complete
+                }
+
+                @Override
+                public void onUserFileArrive(String username, byte[] file) {
+                    // TODO: Complete
+                }
+
+                @Override
+                public void onGroupFileArrive(String username, String group, byte[] file) {
                     // TODO: Complete
                 }
 
@@ -93,8 +115,9 @@ public class CommandAPIController {
         final Principal user = event.getUser();
 
         if (simpDestination != null && simpDestination.equals("/user/queue/message") && user != null) {
+            System.out.println("Callback destruido por unsubscription-----------" + user.getName());
             final String username = user.getName();
-            messageBrokerAPI.disconnectUser(username);
+            messageBrokerAPI.deleteUserReceiverMessagesCallback(username);
         }
     }
 }
