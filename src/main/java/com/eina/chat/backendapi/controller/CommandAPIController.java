@@ -9,9 +9,7 @@ import com.eina.chat.backendapi.protocol.packages.message.response.MessageFromUs
 import com.eina.chat.backendapi.protocol.packages.common.response.OperationSucceedResponse;
 import com.eina.chat.backendapi.protocol.packages.common.response.OperationFailResponse;
 import com.eina.chat.backendapi.rabbitmq.ReceiveHandler;
-import com.eina.chat.backendapi.service.EncryptionAPI;
-import com.eina.chat.backendapi.service.MessageBrokerAPI;
-import com.eina.chat.backendapi.service.UserAccountDatabaseAPI;
+import com.eina.chat.backendapi.service.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +23,7 @@ import org.springframework.web.socket.messaging.SessionSubscribeEvent;
 import org.springframework.web.socket.messaging.SessionUnsubscribeEvent;
 
 import java.security.Principal;
+import java.util.List;
 
 @Controller
 public class CommandAPIController {
@@ -52,6 +51,12 @@ public class CommandAPIController {
      */
     @Autowired
     private UserAccountDatabaseAPI userAccountDatabaseAPI;
+
+    @Autowired
+    private GroupsManagementDatabaseAPI groupsManagementDatabaseAPI;
+
+    @Autowired
+    private MessageHistoryDatabaseAPI messageHistoryDatabaseAPI;
 
     /**
      * Logger
@@ -96,7 +101,7 @@ public class CommandAPIController {
     }
 
     /**
-     * Handle messages received from user with content of type AddUserToChatRoom
+     * Handle messages received from user with content of type AddUserToChatRoomCommand
      *
      * @param username                 user username
      * @param addUserToChatRoomCommand content
@@ -104,12 +109,19 @@ public class CommandAPIController {
      */
     public BasicPackage handlerAddUserToChatRoom(String username, AddUserToChatRoomCommand addUserToChatRoomCommand) {
         logger.info("Received message from type AddUserToChatRoomCommand from: " + username);
-        // TODO:
-        return new OperationFailResponse(addUserToChatRoomCommand.getMessageId(), TypesOfMessage.UNKNOWN_COMMAND);
+        if (addUserToChatRoomCommand.getRoomName() != null &&
+                addUserToChatRoomCommand.getUsername() != null &&
+                groupsManagementDatabaseAPI.checkIfIsGroupAdmin(addUserToChatRoomCommand.getRoomName(), username) &&
+                userAccountDatabaseAPI.checkUserExist(addUserToChatRoomCommand.getUsername())) {
+            groupsManagementDatabaseAPI.addUserToGroup(addUserToChatRoomCommand.getRoomName(),
+                    addUserToChatRoomCommand.getUsername());
+            return new OperationSucceedResponse(addUserToChatRoomCommand.getMessageId());
+        } else
+            return new OperationFailResponse(addUserToChatRoomCommand.getMessageId(), TypesOfMessage.ADD_USER_TO_CHAT_ROOM);
     }
 
     /**
-     * Handle messages received from user with content of type AddUserToChatRoom
+     * Handle messages received from user with content of type CreateRoomCommand
      *
      * @param username          user username
      * @param createRoomCommand content
@@ -117,51 +129,92 @@ public class CommandAPIController {
      */
     public BasicPackage handlerCreateRoomCommand(String username, CreateRoomCommand createRoomCommand) {
         logger.info("Received message from type CreateRoomCommand from: " + username);
-        // TODO:
-        return new OperationFailResponse(createRoomCommand.getMessageId(), TypesOfMessage.UNKNOWN_COMMAND);
+        if (!createRoomCommand.getRoomName().isBlank() &&
+                createRoomCommand.getRoomName().length() <= 50 &&
+                !groupsManagementDatabaseAPI.checkIfGroupExist(createRoomCommand.getRoomName())) {
+            groupsManagementDatabaseAPI.createGroup(createRoomCommand.getRoomName(), username);
+            return new OperationSucceedResponse(createRoomCommand.getMessageId());
+        } else
+            return new OperationFailResponse(createRoomCommand.getMessageId(), TypesOfMessage.DUPLICATED_ROOM_ERROR);
     }
 
     /**
-     * Handle messages received from user with content of type AddUserToChatRoom
+     * Handle messages received from user with content of type DeleteAccountCommand
      *
      * @param username             user username
      * @param deleteAccountCommand content
      * @return command response
      */
     public BasicPackage handlerDeleteAccountCommand(String username, DeleteAccountCommand deleteAccountCommand) {
+        // TODO: Now the delete is effective once session is closed
         logger.info("Received message from type DeleteAccountCommand from: " + username);
-        // TODO:
-        return new OperationFailResponse(deleteAccountCommand.getMessageId(), TypesOfMessage.UNKNOWN_COMMAND);
+
+        // Delete all groups where is admin and the associated messages
+        List<String> administeredGroups = groupsManagementDatabaseAPI.getAllGroupsWhereIsAdmin(username);
+        for (String group : administeredGroups) {
+            messageHistoryDatabaseAPI.deleteMessagesFromGroup(group);
+            messageHistoryDatabaseAPI.deleteFilesFromGroup(group);
+        }
+
+        groupsManagementDatabaseAPI.deleteAllGroupsFromAdmin(username);
+
+        // Delete the membership to all groups
+        groupsManagementDatabaseAPI.removeUserFromAllGroups(username);
+
+        // Delete user account
+        userAccountDatabaseAPI.deleteUser(username);
+
+        return new OperationSucceedResponse(deleteAccountCommand.getMessageId());
     }
 
     /**
-     * Handle messages received from user with content of type AddUserToChatRoom
+     * Handle messages received from user with content of type DeleteRoomCommand
      *
      * @param username          user username
      * @param deleteRoomCommand content
      * @return command response
      */
     public BasicPackage handlerDeleteRoomCommand(String username, DeleteRoomCommand deleteRoomCommand) {
+        // TODO: May notify all group member of the deletion
         logger.info("Received message from type DeleteRoomCommand from: " + username);
-        // TODO:
-        return new OperationFailResponse(deleteRoomCommand.getMessageId(), TypesOfMessage.UNKNOWN_COMMAND);
+        if (deleteRoomCommand.getRoomName() != null &&
+                groupsManagementDatabaseAPI.checkIfIsGroupAdmin(deleteRoomCommand.getRoomName(), username)) {
+            // Delete associated messages
+            messageHistoryDatabaseAPI.deleteMessagesFromGroup(deleteRoomCommand.getRoomName());
+            messageHistoryDatabaseAPI.deleteFilesFromGroup(deleteRoomCommand.getRoomName());
+
+            // Delete group
+            groupsManagementDatabaseAPI.deleteGroup(deleteRoomCommand.getRoomName());
+
+            return new OperationSucceedResponse(deleteRoomCommand.getMessageId());
+        } else
+            return new OperationFailResponse(deleteRoomCommand.getMessageId(), TypesOfMessage.DELETE_UNKNOWN_ROOM_ERROR);
     }
 
     /**
-     * Handle messages received from user with content of type AddUserToChatRoom
+     * Handle messages received from user with content of type DeleteUserFromChatRoom
      *
      * @param username               user username
      * @param deleteUserFromChatRoom content
      * @return command response
      */
     public BasicPackage handlerDeleteUserFromChatRoom(String username, DeleteUserFromChatRoom deleteUserFromChatRoom) {
+        // TODO: May notify of the deletion
         logger.info("Received message from type DeleteUserFromChatRoom from: " + username);
-        // TODO:
-        return new OperationFailResponse(deleteUserFromChatRoom.getMessageId(), TypesOfMessage.UNKNOWN_COMMAND);
+        if (deleteUserFromChatRoom.getRoomName() != null &&
+                deleteUserFromChatRoom.getUsername() != null &&
+                groupsManagementDatabaseAPI.checkIfIsGroupAdmin(deleteUserFromChatRoom.getRoomName(), username) &&
+                groupsManagementDatabaseAPI.checkIfIsGroupMember(deleteUserFromChatRoom.getRoomName(),
+                        deleteUserFromChatRoom.getUsername())) {
+            groupsManagementDatabaseAPI.removeUserFromGroup(deleteUserFromChatRoom.getRoomName(),
+                    deleteUserFromChatRoom.getUsername());
+            return new OperationSucceedResponse(deleteUserFromChatRoom.getMessageId());
+        } else
+            return new OperationFailResponse(deleteUserFromChatRoom.getMessageId(), TypesOfMessage.DELETE_USER_FROM_CHAT_ROOM_ERROR);
     }
 
     /**
-     * Handle messages received from user with content of type AddUserToChatRoom
+     * Handle messages received from user with content of type SearchUserCommand
      *
      * @param username          user username
      * @param searchUserCommand content
@@ -169,12 +222,12 @@ public class CommandAPIController {
      */
     public BasicPackage handlerSearchUserCommand(String username, SearchUserCommand searchUserCommand) {
         logger.info("Received message from type SearchUserCommand from: " + username);
-        // TODO:
+        // TODO: This call looks unnecessary, wait until client been implemented
         return new OperationFailResponse(searchUserCommand.getMessageId(), TypesOfMessage.UNKNOWN_COMMAND);
     }
 
     /**
-     * Handle messages received from user with content of type AddUserToChatRoom
+     * Handle messages received from user with content of type SendFileToRoomCommand
      *
      * @param username              user username
      * @param sendFileToRoomCommand content
@@ -187,7 +240,7 @@ public class CommandAPIController {
     }
 
     /**
-     * Handle messages received from user with content of type AddUserToChatRoom
+     * Handle messages received from user with content of type SendFileToUserCommand
      *
      * @param username              user username
      * @param sendFileToUserCommand content
@@ -200,7 +253,7 @@ public class CommandAPIController {
     }
 
     /**
-     * Handle messages received from user with content of type AddUserToChatRoom
+     * Handle messages received from user with content of type SendMessageToRoomCommand
      *
      * @param username                 user username
      * @param sendMessageToRoomCommand content

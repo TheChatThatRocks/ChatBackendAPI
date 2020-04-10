@@ -121,4 +121,26 @@ public class GroupsManagementDatabaseAPI {
         // TODO:
         return new ArrayList<>();
     }
+
+    /**
+     * Get all groups where user is admin
+     *
+     * @param username user username
+     * @return all groups where user is member
+     */
+    public List<String> getAllGroupsWhereIsAdmin(@NonNull String username) {
+        // TODO:
+        return new ArrayList<>();
+    }
+
+    /**
+     * Check if group exist
+     *
+     * @param groupName group name
+     * @return true if group exist
+     */
+    public boolean checkIfGroupExist(@NonNull String groupName) {
+        // TODO:
+        return true;
+    }
 }

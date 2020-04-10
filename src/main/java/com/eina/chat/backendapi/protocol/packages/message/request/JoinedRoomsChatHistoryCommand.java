@@ -14,4 +14,5 @@ public class JoinedRoomsChatHistoryCommand extends BasicPackage {
     public JoinedRoomsChatHistoryCommand(int messageId) {
         super(messageId);
     }
+
 }

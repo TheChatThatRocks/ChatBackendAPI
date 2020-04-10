@@ -16,4 +16,12 @@ public class CreateRoomCommand extends BasicPackage {
     public CreateRoomCommand(int messageId) {
         super(messageId);
     }
+
+    public String getRoomName() {
+        return roomName;
+    }
+
+    public void setRoomName(String roomName) {
+        this.roomName = roomName;
+    }
 }
