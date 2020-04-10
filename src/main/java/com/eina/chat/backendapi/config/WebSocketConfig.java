@@ -13,10 +13,11 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
         config.enableSimpleBroker(
-                "/sign-up", // Sign up
-                "/queue/error/sign-up", //  Sign up errors
-                "/send-direct-message", // Send direct message
-                "/queue/error/send-direct-message" // Send direct message errors
+                "/sign-up", // Send sign up
+                "/queue/error/sign-up", // Sign up errors
+                "/message", // Send command to server
+                "/queue/message", // Receive server response
+                "/queue/error/message" // Send direct message errors
         );
 
         config.setApplicationDestinationPrefixes("/app");

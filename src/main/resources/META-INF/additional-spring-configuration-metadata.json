@@ -1,0 +1,9 @@
+{
+  "properties": [
+    {
+      "name": "app.back-end-api-ws-uri",
+      "type": "java.lang.String",
+      "description": "Web server backend location."
+    }
+  ]
+}
