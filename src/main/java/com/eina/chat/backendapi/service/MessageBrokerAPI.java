@@ -37,9 +37,11 @@ public class MessageBrokerAPI {
         logger.info("[" + username + "] User has been created");
     }
 
-    public void sendMessageToUser(String userFrom, String userTo, String message) {
-        producer.send(userFrom + ".*." + userTo, message);
-        logger.info("[" + userFrom + "] Sent to [" + userTo + "]: " + message);
+    public void deleteUser(String username){
+        // Disconnect and delete user
+        disconnectUser(username);
+        rabbitAdmin.deleteQueue(username);
+        logger.info("[" + username + "] User has been deleted");
     }
 
     public void addUserToGroup(String username){
@@ -67,10 +69,8 @@ public class MessageBrokerAPI {
         logger.info("[" + username + "] Disconnecting...");
     }
 
-    public void deleteUser(String username){
-        // Disconnect and delete user
-        disconnectUser(username);
-        rabbitAdmin.deleteQueue(username);
-        logger.info("[" + username + "] User has been deleted");
+    public void sendMessageToUser(String userFrom, String userTo, String message) {
+        producer.send(userFrom + ".*." + userTo, message);
+        logger.info("[" + userFrom + "] Sent to [" + userTo + "]: " + message);
     }
 }

@@ -180,7 +180,6 @@ public class CommandAPIControllerTest {
             }
         });
 
-
         sessionUser2.subscribe("/user/queue/error/message", new StompFrameHandler() {
             @Override
             public Type getPayloadType(StompHeaders headers) {
@@ -194,6 +193,7 @@ public class CommandAPIControllerTest {
                 failure.set(new Exception("Message in User2 errors"));
             }
         });
+
 
         sessionUser1.send("/app/message", new SendMessageToUserCommand(sendMessageID, nameUser2, sendMessageContent));
 
