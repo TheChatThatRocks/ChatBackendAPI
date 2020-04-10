@@ -42,6 +42,14 @@ public class MessageBrokerAPI {
         logger.info("[" + userFrom + "] Sent to [" + userTo + "]: " + message);
     }
 
+    public void addUserToGroup(String username){
+        // TODO:
+    }
+
+    public void removeUserToGroup(String username) {
+        // TODO:
+    }
+
     public void connectUser(String username, ReceiveHandler userHandler) {
         //Create a listener/consumer
         SimpleMessageListenerContainer  listenerContainer = new Consumer(username, userHandler).listenerContainer(connectionFactory);
@@ -50,6 +58,7 @@ public class MessageBrokerAPI {
         consumersContainer.addConsumer(username, listenerContainer);
         listenerContainer.start();
         logger.info("[" + username + "] Connecting...");
+
     }
 
     public void disconnectUser(String username) {
@@ -57,22 +66,6 @@ public class MessageBrokerAPI {
         consumersContainer.deleteConsumer(username);
         logger.info("[" + username + "] Disconnecting...");
     }
-
-
-    /* TODO: se van a cambiar los handlers??
-    public void replaceReceiveHandler(String username, ReceiveHandler receiveHandler){
-        SimpleMessageListenerContainer consumer = consumersContainer.getConsumer(username);
-        if (consumer != null){
-            if (consumer.isRunning()){
-                consumer.stop();
-                consumer. // creo que hay que guardar tb los Consumers, guardar en consumer el SMLC
-                consumer.start();
-                consumersContainer.addConsumer(username, consumer);
-
-            }
-        }
-    }
-    */
 
     public void deleteUser(String username){
         // Disconnect and delete user
