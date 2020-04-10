@@ -6,6 +6,7 @@ import com.eina.chat.backendapi.protocol.packages.message.response.MessageFromUs
 import com.eina.chat.backendapi.protocol.packages.message.response.OperationSucceedResponse;
 import com.eina.chat.backendapi.protocol.packages.message.response.SendMessageToUserErrorResponse;
 import com.eina.chat.backendapi.protocol.packages.message.response.UnknownCommandResponse;
+import com.eina.chat.backendapi.rabbitmq.ReceiveHandler;
 import com.eina.chat.backendapi.service.MessageBrokerAPI;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
@@ -37,13 +38,11 @@ public class CommandAPIController {
     public BasicPackage commandAPIMessageHandler(@Payload BasicPackage basicPackage, Principal principal) {
         if (basicPackage instanceof SendMessageToUserCommand) {
             SendMessageToUserCommand sendMessageToUser = (SendMessageToUserCommand) basicPackage;
-            if (messageBrokerAPI.sendMessageToUser(principal.getName(),
+            // TODO: completar
+            messageBrokerAPI.sendMessageToUser(principal.getName(),
                     sendMessageToUser.getUsername(),
-                    sendMessageToUser.getMessage()))
+                    sendMessageToUser.getMessage());
                 return new OperationSucceedResponse(sendMessageToUser.getMessageId());
-            else
-                return new SendMessageToUserErrorResponse(sendMessageToUser.getMessageId());
-
         } else return new UnknownCommandResponse(basicPackage.getMessageId());
     }
 
@@ -57,7 +56,7 @@ public class CommandAPIController {
 
         if (simpDestination != null && simpDestination.equals("/user/queue/message") && user != null) {
             final String username = user.getName();
-            messageBrokerAPI.addUserReceiverMessagesCallback(new MessageBrokerAPI.BrokerMessagePackage() {
+            messageBrokerAPI.connectUser(username, new ReceiveHandler() {
                 @Override
                 public void onUserMessageArrive(String fromUsername, String message) {
                     simpMessagingTemplate.convertAndSendToUser(username,
@@ -70,7 +69,7 @@ public class CommandAPIController {
                     // TODO: Complete
                 }
 
-            }, username);
+            });
         }
     }
 
@@ -84,7 +83,7 @@ public class CommandAPIController {
 
         if (simpDestination != null && simpDestination.equals("/user/queue/message") && user != null) {
             final String username = user.getName();
-            messageBrokerAPI.deleteUserReceiverMessagesCallback(username);
+            messageBrokerAPI.disconnectUser(username);
         }
     }
 }

@@ -13,20 +13,20 @@ public class Consumer {
 
     private static final Logger logger = LogManager.getLogger("rabbit");
     private final String username;
-    private MessageBrokerAPI.ReceiveHandler apiReceiveHandler;
-    public Consumer(String username, MessageBrokerAPI.ReceiveHandler apiHandlerMessage){
+    private final ReceiveHandler apiReceiveHandler;
+    public Consumer(String username, ReceiveHandler apiHandlerMessage){
         this.username = username;
         this.apiReceiveHandler = apiHandlerMessage;
     }
 
-    public SimpleMessageListenerContainer listenerContainer(ConnectionFactory connectionFactory, Queue queue, MessageBrokerAPI.ReceiveHandler apiReceiveHandler) {
+    public SimpleMessageListenerContainer listenerContainer(ConnectionFactory connectionFactory) {
         final SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
         container.setConnectionFactory(connectionFactory);
         container.setAutoStartup(false);
         container.setAcknowledgeMode(AcknowledgeMode.AUTO);
         container.setConcurrentConsumers(1);
         container.setExclusive(true);
-        container.addQueues(queue);
+        container.addQueueNames(username);
         container.setMessageListener(new MessageListenerAdapter(new MessageHandler(), "receiveMessage"));
         return container;
     }
@@ -34,11 +34,7 @@ public class Consumer {
     private class MessageHandler{
         public void receiveMessage(String message){
             logger.info("[" + username + "] Received: " + message);
-//            apiReceiveHandler.onUserMessageArrive(username, message);
+            apiReceiveHandler.onUserMessageArrive(username, message);
         }
-    }
-
-    public void setApiReceiveHandler(MessageBrokerAPI.ReceiveHandler apiReceiveHandler) {
-        this.apiReceiveHandler = apiReceiveHandler;
     }
 }

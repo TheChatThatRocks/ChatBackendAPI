@@ -18,20 +18,15 @@ public class ConsumersContainer {
         consumers = new ConcurrentHashMap<>();
     }
 
-    public boolean addConsumer(String username, SimpleMessageListenerContainer listener){
-        if (!consumers.containsKey(username)){
-            consumers.put(username, listener);
-            return true;
-        }
-        return false;
+    public void addConsumer(String username, SimpleMessageListenerContainer listener){
+        consumers.put(username, listener);
+    }
+
+    public void deleteConsumer(String username){
+        consumers.remove(username);
     }
 
     public SimpleMessageListenerContainer getConsumer(String username) {
         return consumers.get(username);
-    }
-
-    public boolean deleteConsumer(String username){
-
-        return consumers.remove(username)!=null;
     }
 }
