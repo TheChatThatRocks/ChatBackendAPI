@@ -20,6 +20,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.socket.messaging.SessionSubscribeEvent;
+import org.springframework.web.socket.messaging.SessionUnsubscribeEvent;
 
 import java.security.Principal;
 
@@ -119,7 +120,7 @@ public class CommandAPIController {
      * Notify when user is unsubscribed to /user/queue/message
      */
     @EventListener
-    public void handleSessionUnsubscribeEvent(SessionSubscribeEvent event) {
+    public void handleSessionUnsubscribeEvent(SessionUnsubscribeEvent event) {
         String simpDestination = (String) event.getMessage().getHeaders().get("simpDestination");
         simpDestination = simpDestination != null ? simpDestination : "";
 
