@@ -1,23 +1,12 @@
 package com.eina.chat.backendapi.service;
 
-import com.eina.chat.backendapi.errors.WSResponseStatus;
-import com.eina.chat.backendapi.model.User;
+import com.eina.chat.backendapi.rabbitmq.ReceiveHandler;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.messaging.simp.stomp.*;
-import org.springframework.util.concurrent.ListenableFuture;
-
-import java.lang.reflect.Type;
-import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -33,43 +22,37 @@ public class MessageBrokerAPITest {
 
     @Test
     public void sendMessageFromUserToUser() throws Exception {
-        messageBrokerAPI.createUser("user1");
-        messageBrokerAPI.createUser("user2");
 
-        final CountDownLatch messagesToReceive = new CountDownLatch(1);
+        final CountDownLatch step = new CountDownLatch(1);
 
-        int user1_callback_id = messageBrokerAPI.addUserReceiverMessagesCallback(new MessageBrokerAPI.BrokerMessagePackage() {
+        class UserListener implements MessageBrokerAPI.ReceiveHandler {
             @Override
             public void onUserMessageArrive(String user, String message) {
-                System.out.println("Ha llegado el mensaje");
-                messagesToReceive.countDown();
+                step.countDown();
+                System.out.printf("TEST -- [%s] Recibido msg: %s\n", user, message);
             }
 
             @Override
             public void onGroupMessageArrive(String user, String group, String message) {
-
             }
-        }, "user1");
-
-        int user2_callback_id = messageBrokerAPI.addUserReceiverMessagesCallback(new MessageBrokerAPI.BrokerMessagePackage() {
-            @Override
-            public void onUserMessageArrive(String user, String message) {
-
-            }
-
-            @Override
-            public void onGroupMessageArrive(String user, String group, String message) {
-
-            }
-        }, "user2");
-
-        messageBrokerAPI.sendMessageToUser("user2", "user1", "message");
-
-        if (!messagesToReceive.await(10, TimeUnit.SECONDS)) {
-            fail("Message not received");
         }
 
-        messageBrokerAPI.deleteUserReceiverMessagesCallback(user1_callback_id);
-        messageBrokerAPI.deleteUserReceiverMessagesCallback(user2_callback_id);
+        messageBrokerAPI.createUser("user2", new UserListener());
+        messageBrokerAPI.createUser("user1", new UserListener());
+        messageBrokerAPI.connectUser("user1");
+        messageBrokerAPI.connectUser("user2");
+
+        messageBrokerAPI.sendMessageToUser("user2", "user1", "hola 1");
+        messageBrokerAPI.sendMessageToUser("user1", "user2", "hola 2");
+        messageBrokerAPI.disconnectUser("user1");
+        messageBrokerAPI.sendMessageToUser("user2", "user1", "hola 1 de nuevo");
+        Thread.sleep(5000);
+        System.out.println("Despertando...");
+        messageBrokerAPI.connectUser("user1");
+        messageBrokerAPI.disconnectUser("user1");
+        messageBrokerAPI.disconnectUser("user2");
+//        if (!messagesToReceive.await(300, TimeUnit.SECONDS)) {
+//            fail("Message not received");
+//        }
     }
 }
