@@ -54,7 +54,9 @@ public class CommandAPIController {
     public BasicPackage commandAPIMessageHandler(@Payload BasicPackage basicPackage, Principal principal) {
         if (basicPackage instanceof SendMessageToUserCommand) {
             SendMessageToUserCommand sendMessageToUser = (SendMessageToUserCommand) basicPackage;
+
             if (userAccountDatabaseAPI.checkUserExist(sendMessageToUser.getUsername())) {
+                System.out.println("Message send en api -----------" + sendMessageToUser.getUsername());
                 messageBrokerAPI.sendMessageToUser(principal.getName(), sendMessageToUser.getUsername(),
                         sendMessageToUser.getMessage());
                 return new OperationSucceedResponse(sendMessageToUser.getMessageId());
@@ -74,9 +76,12 @@ public class CommandAPIController {
 
         if (simpDestination != null && simpDestination.equals("/user/queue/message") && user != null) {
             final String username = user.getName();
+
+            System.out.println("Callback creado-----------" + username);
             messageBrokerAPI.addUserReceiverMessagesCallback(username, new ReceiveHandler() {
                 @Override
                 public void onUserMessageArrive(String fromUsername, String message) {
+                    System.out.println("Message send -----------");
                     simpMessagingTemplate.convertAndSendToUser(username,
                             "/queue/message",
                             new MessageFromUserResponse(fromUsername, message));
@@ -110,6 +115,7 @@ public class CommandAPIController {
         final Principal user = event.getUser();
 
         if (simpDestination != null && simpDestination.equals("/user/queue/message") && user != null) {
+            System.out.println("Callback destruido por unsubscription-----------" + user.getName());
             final String username = user.getName();
             messageBrokerAPI.deleteUserReceiverMessagesCallback(username);
         }

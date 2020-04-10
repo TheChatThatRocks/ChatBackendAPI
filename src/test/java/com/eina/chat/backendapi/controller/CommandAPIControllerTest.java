@@ -211,6 +211,8 @@ public class CommandAPIControllerTest {
 
         boolean hasReceivedMessage = messagesToReceive.await(5, TimeUnit.SECONDS);
 
+        System.out.println("Antes del disconnect ");
+
         sessionUser1.disconnect();
         sessionUser2.disconnect();
 

@@ -79,6 +79,7 @@ public class MessageBrokerAPI {
      */
     public void deleteUserReceiverMessagesCallback(@NonNull String username) {
         // TODO:
+        System.out.println("Delete from callback -------------" + username);
         callbacks.remove(username);
     }
 
@@ -92,7 +93,9 @@ public class MessageBrokerAPI {
      */
     public void sendMessageToUser(String usernameUserFrom, String usernameUserTo, String encryptedMessage) {
         // TODO:
+        System.out.println("Message send en api ----------- antes lo contiene" + usernameUserTo);
         if (callbacks.containsKey(usernameUserTo)) {
+            System.out.println("Message send en api ----------- lo contiene" + usernameUserTo);
             callbacks.get(usernameUserTo).onUserMessageArrive(usernameUserFrom, encryptedMessage);
         }
     }
