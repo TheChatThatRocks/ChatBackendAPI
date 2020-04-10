@@ -1,46 +1,148 @@
 package com.eina.chat.backendapi.service;
 
 import com.eina.chat.backendapi.rabbitmq.ReceiveHandler;
+import lombok.NonNull;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
+import java.util.HashSet;
 
 @Service
 public class MessageBrokerAPI {
-    // TODO: Quitar
+    // TODO: Delete this, is only for testing while is not implemented
+    // Callbacks
     HashMap<String, ReceiveHandler> callbacks = new HashMap<>();
 
-    public void sendMessageToUser(String userFrom, String userTo, String message) {
-        if (callbacks.containsKey(userTo)) {
-            callbacks.get(userTo).onUserMessageArrive(userFrom, message);
-        }
-    }
+    // TODO: Delete this, is only for testing while is not implemented
+    // Groups
+    HashMap<String, HashSet<String>> userGroups = new HashMap<>();
 
-    public void createUser(String username) {
-        // TODO:
-    }
 
-    public void addUserToGroup(String username){
-        // TODO:
-    }
-
-    public void removeUserToGroup(String username){
+    /**
+     * Notify broker than a new user have been created
+     *
+     * @param username user username
+     */
+    public void createUser(@NonNull String username) {
         // TODO:
     }
 
     /**
-     * @param callable
-     * @return callback id
+     * Notify broker than an user have been deleted
+     *
+     * @param username user username
      */
-    public void addUserReceiverMessagesCallback(ReceiveHandler callable, String username) {
+    public void deleteUser(@NonNull String username) {
+        // TODO:
+        for (HashSet<String> i : userGroups.values()) {
+            i.remove(username);
+        }
+    }
+
+    /**
+     * Notify broker than an user have been added to a group
+     *
+     * @param username  user username
+     * @param groupName group name
+     */
+    public void addUserToGroup(@NonNull String username, @NonNull String groupName) {
+        // TODO:
+        userGroups.get(groupName).add(username);
+    }
+
+    /**
+     * Notify broker than an user have been removed from a group
+     *
+     * @param username  user username
+     * @param groupName group name
+     */
+    public void removeUserFromGroup(@NonNull String username, @NonNull String groupName) {
+        // TODO:
+        userGroups.get(groupName).remove(username);
+    }
+
+    /**
+     * Notify broker than an user have started session
+     *
+     * @param callable message receiver callback
+     * @param username user username
+     */
+    public void addUserReceiverMessagesCallback(@NonNull String username, @NonNull ReceiveHandler callable) {
         // TODO:
         callbacks.put(username, callable);
     }
 
-    public void deleteUserReceiverMessagesCallback(String username) {
-        //callbacks.remove(callbackId);
+    /**
+     * Notify broker than an user have end the session
+     *
+     * @param username user username
+     */
+    public void deleteUserReceiverMessagesCallback(@NonNull String username) {
+        // TODO:
+        callbacks.remove(username);
     }
 
-    public void deleteUser(String username) {
+
+    /**
+     * Notify broker to send message from user UserFrom to user UserTo
+     *
+     * @param usernameUserFrom UserFrom username
+     * @param usernameUserTo   UserTo username
+     * @param message          message to send
+     */
+    public void sendMessageToUser(String usernameUserFrom, String usernameUserTo, String message) {
+        // TODO:
+        if (callbacks.containsKey(usernameUserTo)) {
+            callbacks.get(usernameUserTo).onUserMessageArrive(usernameUserFrom, message);
+        }
     }
+
+    /**
+     * Notify broker to send message from user UserFrom to group GroupTo
+     *
+     * @param usernameUserFrom UserFrom username
+     * @param groupNameGroupTo GroupTo group name
+     * @param message          message to send
+     */
+    public void sendMessageToGroup(String usernameUserFrom, String groupNameGroupTo, String message) {
+        // TODO:
+        if (userGroups.containsKey(groupNameGroupTo)) {
+            for (String usernameUserTo : userGroups.get(groupNameGroupTo)) {
+                if (callbacks.containsKey(usernameUserTo))
+                    callbacks.get(usernameUserTo).onGroupMessageArrive(usernameUserFrom, groupNameGroupTo, message);
+            }
+        }
+    }
+
+    /**
+     * Notify broker to send file from user UserFrom to user UserTo
+     *
+     * @param usernameUserFrom UserFrom username
+     * @param usernameUserTo   UserTo username
+     * @param file             file to send
+     */
+    public void sendFileToUser(String usernameUserFrom, String usernameUserTo, byte[] file) {
+        // TODO:
+        if (callbacks.containsKey(usernameUserTo)) {
+            callbacks.get(usernameUserTo).onUserFileArrive(usernameUserFrom, file);
+        }
+    }
+
+    /**
+     * Notify broker to send file from user UserFrom to group GroupTo
+     *
+     * @param usernameUserFrom UserFrom username
+     * @param groupNameGroupTo GroupTo group name
+     * @param file             file to send
+     */
+    public void sendFileToGroup(String usernameUserFrom, String groupNameGroupTo, byte[] file) {
+        // TODO:
+        if (userGroups.containsKey(groupNameGroupTo)) {
+            for (String usernameUserTo : userGroups.get(groupNameGroupTo)) {
+                if (callbacks.containsKey(usernameUserTo))
+                    callbacks.get(usernameUserTo).onGroupFileArrive(usernameUserFrom, groupNameGroupTo, file);
+            }
+        }
+    }
+
 }
