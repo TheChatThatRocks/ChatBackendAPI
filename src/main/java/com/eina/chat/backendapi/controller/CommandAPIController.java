@@ -6,7 +6,9 @@ import com.eina.chat.backendapi.protocol.packages.message.response.MessageFromUs
 import com.eina.chat.backendapi.protocol.packages.message.response.OperationSucceedResponse;
 import com.eina.chat.backendapi.protocol.packages.message.response.SendMessageToUserErrorResponse;
 import com.eina.chat.backendapi.protocol.packages.message.response.UnknownCommandResponse;
+import com.eina.chat.backendapi.rabbitmq.ReceiveHandler;
 import com.eina.chat.backendapi.service.MessageBrokerAPI;
+import com.eina.chat.backendapi.service.UserAccountDatabaseAPI;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -32,15 +34,23 @@ public class CommandAPIController {
     @Autowired
     private MessageBrokerAPI messageBrokerAPI;
 
+
+    /**
+     * Database API
+     */
+    @Autowired
+    private UserAccountDatabaseAPI userAccountDatabaseAPI;
+
     @MessageMapping("/message")
     @SendToUser("/queue/error/message")
     public BasicPackage commandAPIMessageHandler(@Payload BasicPackage basicPackage, Principal principal) {
         if (basicPackage instanceof SendMessageToUserCommand) {
             SendMessageToUserCommand sendMessageToUser = (SendMessageToUserCommand) basicPackage;
-            if (messageBrokerAPI.sendMessageToUser(principal.getName(),
-                    sendMessageToUser.getUsername(),
-                    sendMessageToUser.getMessage()))
+            if(userAccountDatabaseAPI.checkUserExist(sendMessageToUser.getUsername())){
+                messageBrokerAPI.sendMessageToUser(principal.getName(), sendMessageToUser.getUsername(),
+                        sendMessageToUser.getMessage());
                 return new OperationSucceedResponse(sendMessageToUser.getMessageId());
+            }
             else
                 return new SendMessageToUserErrorResponse(sendMessageToUser.getMessageId());
 
@@ -57,7 +67,7 @@ public class CommandAPIController {
 
         if (simpDestination != null && simpDestination.equals("/user/queue/message") && user != null) {
             final String username = user.getName();
-            messageBrokerAPI.addUserReceiverMessagesCallback(new MessageBrokerAPI.BrokerMessagePackage() {
+            messageBrokerAPI.addUserReceiverMessagesCallback(new ReceiveHandler() {
                 @Override
                 public void onUserMessageArrive(String fromUsername, String message) {
                     simpMessagingTemplate.convertAndSendToUser(username,

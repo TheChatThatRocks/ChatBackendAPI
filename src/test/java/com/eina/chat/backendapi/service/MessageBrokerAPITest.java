@@ -1,5 +1,6 @@
 package com.eina.chat.backendapi.service;
 
+import com.eina.chat.backendapi.rabbitmq.ReceiveHandler;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -31,7 +32,7 @@ public class MessageBrokerAPITest {
 
         final CountDownLatch messagesToReceive = new CountDownLatch(1);
 
-        boolean user1_callback_id = messageBrokerAPI.addUserReceiverMessagesCallback(new MessageBrokerAPI.BrokerMessagePackage() {
+        messageBrokerAPI.addUserReceiverMessagesCallback(new ReceiveHandler() {
             @Override
             public void onUserMessageArrive(String user, String message) {
                 System.out.println("Ha llegado el mensaje");
@@ -44,9 +45,8 @@ public class MessageBrokerAPITest {
             }
         }, "user1");
 
-        assert (user1_callback_id);
 
-        boolean user2_callback_id = messageBrokerAPI.addUserReceiverMessagesCallback(new MessageBrokerAPI.BrokerMessagePackage() {
+        messageBrokerAPI.addUserReceiverMessagesCallback(new ReceiveHandler() {
             @Override
             public void onUserMessageArrive(String user, String message) {
 
@@ -58,7 +58,6 @@ public class MessageBrokerAPITest {
             }
         }, "user2");
 
-        assert (user2_callback_id);
 
         messageBrokerAPI.sendMessageToUser("user2", "user1", "message");
 

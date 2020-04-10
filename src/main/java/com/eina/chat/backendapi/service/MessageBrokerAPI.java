@@ -1,48 +1,46 @@
 package com.eina.chat.backendapi.service;
 
+import com.eina.chat.backendapi.rabbitmq.ReceiveHandler;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 
 @Service
 public class MessageBrokerAPI {
     // TODO: Quitar
-    HashMap<String, BrokerMessagePackage> callbacks = new HashMap<>();
+    HashMap<String, ReceiveHandler> callbacks = new HashMap<>();
 
-    public boolean sendMessageToUser(String userFrom, String userTo, String message) {
+    public void sendMessageToUser(String userFrom, String userTo, String message) {
         if (callbacks.containsKey(userTo)) {
             callbacks.get(userTo).onUserMessageArrive(userFrom, message);
         }
-        return true;
     }
 
-    public boolean createUser(String username) {
+    public void createUser(String username) {
         // TODO:
-        return true;
     }
 
-    public interface BrokerMessagePackage {
-        void onUserMessageArrive(String user, String message);
+    public void addUserToGroup(String username){
+        // TODO:
+    }
 
-        void onGroupMessageArrive(String user, String group, String message);
+    public void removeUserToGroup(String username){
+        // TODO:
     }
 
     /**
      * @param callable
      * @return callback id
      */
-    public boolean addUserReceiverMessagesCallback(BrokerMessagePackage callable, String username) {
+    public void addUserReceiverMessagesCallback(ReceiveHandler callable, String username) {
         // TODO:
         callbacks.put(username, callable);
-        return true;
     }
 
     public void deleteUserReceiverMessagesCallback(String username) {
         //callbacks.remove(callbackId);
     }
 
-    public boolean deleteUser(String username) {
-        return true;
+    public void deleteUser(String username) {
     }
 }
