@@ -13,16 +13,7 @@ public class CreateRoomCommand extends BasicPackage {
     }
 
     @SuppressWarnings("unused")
-    public CreateRoomCommand(int messageId, String roomName) {
+    public CreateRoomCommand(int messageId) {
         super(messageId);
-        this.roomName = roomName;
-    }
-
-    public String getRoomName() {
-        return roomName;
-    }
-
-    public void setRoomName(String roomName) {
-        this.roomName = roomName;
     }
 }

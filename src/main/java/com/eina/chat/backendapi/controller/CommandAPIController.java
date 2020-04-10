@@ -1,7 +1,7 @@
 package com.eina.chat.backendapi.controller;
 
 import com.eina.chat.backendapi.protocol.packages.*;
-import com.eina.chat.backendapi.protocol.packages.message.request.SendMessageToUserCommand;
+import com.eina.chat.backendapi.protocol.packages.message.request.*;
 import com.eina.chat.backendapi.protocol.packages.message.response.MessageFromUserResponse;
 import com.eina.chat.backendapi.protocol.packages.message.response.OperationSucceedResponse;
 import com.eina.chat.backendapi.protocol.packages.message.response.SendMessageToUserErrorResponse;
@@ -57,12 +57,145 @@ public class CommandAPIController {
     @Autowired
     private static final Logger logger = LoggerFactory.getLogger(CommandAPIController.class);
 
+    /**
+     * Command endpoint
+     * @param basicPackage command and arguments
+     * @param principal user info
+     * @return command response
+     */
     @MessageMapping("/message")
     @SendToUser("/queue/error/message")
     public BasicPackage commandAPIMessageHandler(@Payload BasicPackage basicPackage, Principal principal) {
-        if (basicPackage instanceof SendMessageToUserCommand)
+        // Select correct handler for the type of message
+        if (basicPackage instanceof AddUserToChatRoom)
+            return handlerAddUserToChatRoom(principal.getName(), (AddUserToChatRoom) basicPackage);
+        else if (basicPackage instanceof CreateRoomCommand)
+            return handlerCreateRoomCommand(principal.getName(), (CreateRoomCommand) basicPackage);
+        else if (basicPackage instanceof DeleteAccountCommand)
+            return handlerDeleteAccountCommand(principal.getName(), (DeleteAccountCommand) basicPackage);
+        else if (basicPackage instanceof DeleteRoomCommand)
+            return handlerDeleteRoomCommand(principal.getName(), (DeleteRoomCommand) basicPackage);
+        else if (basicPackage instanceof DeleteUserFromChatRoom)
+            return handlerDeleteUserFromChatRoom(principal.getName(), (DeleteUserFromChatRoom) basicPackage);
+        else if (basicPackage instanceof SearchUserCommand)
+            return handlerSearchUserCommand(principal.getName(), (SearchUserCommand) basicPackage);
+        else if (basicPackage instanceof SendFileToRoomCommand)
+            return handlerSendFileToRoomCommand(principal.getName(), (SendFileToRoomCommand) basicPackage);
+        else if (basicPackage instanceof SendFileToUserCommand)
+            return handlerSendFileToUserCommand(principal.getName(), (SendFileToUserCommand) basicPackage);
+        else if (basicPackage instanceof SendMessageToRoomCommand)
+            return handlerSendMessageToRoomCommand(principal.getName(), (SendMessageToRoomCommand) basicPackage);
+        else if (basicPackage instanceof SendMessageToUserCommand)
             return handlerSendMessageToUserCommand(principal.getName(), (SendMessageToUserCommand) basicPackage);
         else return new UnknownCommandResponse(basicPackage.getMessageId());
+    }
+
+    /**
+     * Handle messages received from user with content of type AddUserToChatRoom
+     *
+     * @param username          user username
+     * @param addUserToChatRoom content
+     * @return command response
+     */
+    public BasicPackage handlerAddUserToChatRoom(String username, AddUserToChatRoom addUserToChatRoom) {
+        // TODO:
+        return new UnknownCommandResponse(addUserToChatRoom.getMessageId());
+    }
+
+    /**
+     * Handle messages received from user with content of type AddUserToChatRoom
+     *
+     * @param username          user username
+     * @param createRoomCommand content
+     * @return command response
+     */
+    public BasicPackage handlerCreateRoomCommand(String username, CreateRoomCommand createRoomCommand) {
+        // TODO:
+        return new UnknownCommandResponse(createRoomCommand.getMessageId());
+    }
+
+    /**
+     * Handle messages received from user with content of type AddUserToChatRoom
+     *
+     * @param username             user username
+     * @param deleteAccountCommand content
+     * @return command response
+     */
+    public BasicPackage handlerDeleteAccountCommand(String username, DeleteAccountCommand deleteAccountCommand) {
+        // TODO:
+        return new UnknownCommandResponse(deleteAccountCommand.getMessageId());
+    }
+
+    /**
+     * Handle messages received from user with content of type AddUserToChatRoom
+     *
+     * @param username          user username
+     * @param deleteRoomCommand content
+     * @return command response
+     */
+    public BasicPackage handlerDeleteRoomCommand(String username, DeleteRoomCommand deleteRoomCommand) {
+        // TODO:
+        return new UnknownCommandResponse(deleteRoomCommand.getMessageId());
+    }
+
+    /**
+     * Handle messages received from user with content of type AddUserToChatRoom
+     *
+     * @param username               user username
+     * @param deleteUserFromChatRoom content
+     * @return command response
+     */
+    public BasicPackage handlerDeleteUserFromChatRoom(String username, DeleteUserFromChatRoom deleteUserFromChatRoom) {
+        // TODO:
+        return new UnknownCommandResponse(deleteUserFromChatRoom.getMessageId());
+    }
+
+    /**
+     * Handle messages received from user with content of type AddUserToChatRoom
+     *
+     * @param username          user username
+     * @param searchUserCommand content
+     * @return command response
+     */
+    public BasicPackage handlerSearchUserCommand(String username, SearchUserCommand searchUserCommand) {
+        // TODO:
+        return new UnknownCommandResponse(searchUserCommand.getMessageId());
+    }
+
+    /**
+     * Handle messages received from user with content of type AddUserToChatRoom
+     *
+     * @param username              user username
+     * @param sendFileToRoomCommand content
+     * @return command response
+     */
+    public BasicPackage handlerSendFileToRoomCommand(String username, SendFileToRoomCommand sendFileToRoomCommand) {
+        // TODO:
+        return new UnknownCommandResponse(sendFileToRoomCommand.getMessageId());
+    }
+
+    /**
+     * Handle messages received from user with content of type AddUserToChatRoom
+     *
+     * @param username              user username
+     * @param sendFileToUserCommand content
+     * @return command response
+     */
+    public BasicPackage handlerSendFileToUserCommand(String username, SendFileToUserCommand sendFileToUserCommand) {
+        // TODO:
+        return new UnknownCommandResponse(sendFileToUserCommand.getMessageId());
+    }
+
+    /**
+     * Handle messages received from user with content of type AddUserToChatRoom
+     *
+     * @param username                 user username
+     * @param sendMessageToRoomCommand content
+     * @return command response
+     */
+    public BasicPackage handlerSendMessageToRoomCommand(String username, SendMessageToRoomCommand sendMessageToRoomCommand) {
+        // TODO:
+        return new UnknownCommandResponse(sendMessageToRoomCommand.getMessageId());
     }
 
     /**

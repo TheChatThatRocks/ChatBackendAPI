@@ -7,17 +7,17 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 @JsonTypeName(TypesOfMessage.SEND_MESSAGE_TO_USER)
 public class SendFileToUserCommand extends BasicPackage {
     private String username;
-    private String message;
+    private byte[] file;
 
     @SuppressWarnings("unused")
     public SendFileToUserCommand() {
     }
 
     @SuppressWarnings("unused")
-    public SendFileToUserCommand(int messageId, String username, String message) {
+    public SendFileToUserCommand(int messageId, String username, byte[] file) {
         super(messageId);
         this.username = username;
-        this.message = message;
+        this.file = file;
     }
 
     public String getUsername() {
@@ -28,11 +28,11 @@ public class SendFileToUserCommand extends BasicPackage {
         this.username = username;
     }
 
-    public String getMessage() {
-        return message;
+    public byte[] getFile() {
+        return file;
     }
 
-    public void setMessage(String message) {
-        this.message = message;
+    public void setFile(byte[] file) {
+        this.file = file;
     }
 }
