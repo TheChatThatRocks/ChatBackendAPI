@@ -12,11 +12,9 @@ public class UserAccountDatabaseAPI {
      * @param username          user username
      * @param encryptedPassword encrypted user password
      * @param role              user role
-     * @return true if user doesn't exist yet, false otherwise
      */
-    public boolean createUser(@NonNull String username, @NonNull String encryptedPassword, @NonNull String role) {
+    public void createUser(@NonNull String username, @NonNull String encryptedPassword, @NonNull String role) {
         // TODO:
-        return true;
     }
 
     /**

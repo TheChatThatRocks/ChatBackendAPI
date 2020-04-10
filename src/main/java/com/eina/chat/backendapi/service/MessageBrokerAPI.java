@@ -88,12 +88,12 @@ public class MessageBrokerAPI {
      *
      * @param usernameUserFrom UserFrom username
      * @param usernameUserTo   UserTo username
-     * @param message          message to send
+     * @param encryptedMessage encrypted message to send
      */
-    public void sendMessageToUser(String usernameUserFrom, String usernameUserTo, String message) {
+    public void sendMessageToUser(String usernameUserFrom, String usernameUserTo, String encryptedMessage) {
         // TODO:
         if (callbacks.containsKey(usernameUserTo)) {
-            callbacks.get(usernameUserTo).onUserMessageArrive(usernameUserFrom, message);
+            callbacks.get(usernameUserTo).onUserMessageArrive(usernameUserFrom, encryptedMessage);
         }
     }
 
@@ -102,14 +102,14 @@ public class MessageBrokerAPI {
      *
      * @param usernameUserFrom UserFrom username
      * @param groupNameGroupTo GroupTo group name
-     * @param message          message to send
+     * @param encryptedMessage encrypted message to send
      */
-    public void sendMessageToGroup(String usernameUserFrom, String groupNameGroupTo, String message) {
+    public void sendMessageToGroup(String usernameUserFrom, String groupNameGroupTo, String encryptedMessage) {
         // TODO:
         if (userGroups.containsKey(groupNameGroupTo)) {
             for (String usernameUserTo : userGroups.get(groupNameGroupTo)) {
                 if (callbacks.containsKey(usernameUserTo))
-                    callbacks.get(usernameUserTo).onGroupMessageArrive(usernameUserFrom, groupNameGroupTo, message);
+                    callbacks.get(usernameUserTo).onGroupMessageArrive(usernameUserFrom, groupNameGroupTo, encryptedMessage);
             }
         }
     }
@@ -119,12 +119,12 @@ public class MessageBrokerAPI {
      *
      * @param usernameUserFrom UserFrom username
      * @param usernameUserTo   UserTo username
-     * @param file             file to send
+     * @param encryptedFile    encrypted file to send
      */
-    public void sendFileToUser(String usernameUserFrom, String usernameUserTo, byte[] file) {
+    public void sendFileToUser(String usernameUserFrom, String usernameUserTo, byte[] encryptedFile) {
         // TODO:
         if (callbacks.containsKey(usernameUserTo)) {
-            callbacks.get(usernameUserTo).onUserFileArrive(usernameUserFrom, file);
+            callbacks.get(usernameUserTo).onUserFileArrive(usernameUserFrom, encryptedFile);
         }
     }
 
@@ -133,14 +133,14 @@ public class MessageBrokerAPI {
      *
      * @param usernameUserFrom UserFrom username
      * @param groupNameGroupTo GroupTo group name
-     * @param file             file to send
+     * @param encryptedFile    encrypted file to send
      */
-    public void sendFileToGroup(String usernameUserFrom, String groupNameGroupTo, byte[] file) {
+    public void sendFileToGroup(String usernameUserFrom, String groupNameGroupTo, byte[] encryptedFile) {
         // TODO:
         if (userGroups.containsKey(groupNameGroupTo)) {
             for (String usernameUserTo : userGroups.get(groupNameGroupTo)) {
                 if (callbacks.containsKey(usernameUserTo))
-                    callbacks.get(usernameUserTo).onGroupFileArrive(usernameUserFrom, groupNameGroupTo, file);
+                    callbacks.get(usernameUserTo).onGroupFileArrive(usernameUserFrom, groupNameGroupTo, encryptedFile);
             }
         }
     }
