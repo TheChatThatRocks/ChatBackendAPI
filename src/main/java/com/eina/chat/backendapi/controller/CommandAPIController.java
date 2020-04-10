@@ -60,18 +60,26 @@ public class CommandAPIController {
     @MessageMapping("/message")
     @SendToUser("/queue/error/message")
     public BasicPackage commandAPIMessageHandler(@Payload BasicPackage basicPackage, Principal principal) {
-        if (basicPackage instanceof SendMessageToUserCommand) {
-            SendMessageToUserCommand sendMessageToUser = (SendMessageToUserCommand) basicPackage;
+        if (basicPackage instanceof SendMessageToUserCommand)
+            return handlerSendMessageToUserCommand(principal.getName(), (SendMessageToUserCommand) basicPackage);
+        else return new UnknownCommandResponse(basicPackage.getMessageId());
+    }
 
-            if (userAccountDatabaseAPI.checkUserExist(sendMessageToUser.getUsername())) {
-                System.out.println("Message send en api -----------" + sendMessageToUser.getUsername());
-                messageBrokerAPI.sendMessageToUser(principal.getName(), sendMessageToUser.getUsername(),
-                        sendMessageToUser.getMessage());
-                return new OperationSucceedResponse(sendMessageToUser.getMessageId());
-            } else
-                return new SendMessageToUserErrorResponse(sendMessageToUser.getMessageId());
-
-        } else return new UnknownCommandResponse(basicPackage.getMessageId());
+    /**
+     * Handle messages received from user with content of type SendMessageToUserCommand
+     *
+     * @param username                 user username
+     * @param sendMessageToUserCommand content
+     * @return command response
+     */
+    public BasicPackage handlerSendMessageToUserCommand(String username, SendMessageToUserCommand sendMessageToUserCommand) {
+        logger.info("Received message from type SendMessageToUserCommand from: " + username);
+        if (userAccountDatabaseAPI.checkUserExist(sendMessageToUserCommand.getUsername())) {
+            messageBrokerAPI.sendMessageToUser(username, sendMessageToUserCommand.getUsername(),
+                    encryptionAPI.symmetricEncryptString(sendMessageToUserCommand.getMessage()));
+            return new OperationSucceedResponse(sendMessageToUserCommand.getMessageId());
+        } else
+            return new SendMessageToUserErrorResponse(sendMessageToUserCommand.getMessageId());
     }
 
     /**
@@ -94,7 +102,7 @@ public class CommandAPIController {
                     logger.debug("User message arrive callback with message from: " + fromUsername);
                     simpMessagingTemplate.convertAndSendToUser(username,
                             "/queue/message",
-                            new MessageFromUserResponse(fromUsername, message));
+                            new MessageFromUserResponse(fromUsername, encryptionAPI.symmetricDecryptString(message)));
                 }
 
                 @Override

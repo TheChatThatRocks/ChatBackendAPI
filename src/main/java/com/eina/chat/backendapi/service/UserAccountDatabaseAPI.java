@@ -4,6 +4,9 @@ import com.eina.chat.backendapi.security.AccessLevels;
 import lombok.NonNull;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Service
 public class UserAccountDatabaseAPI {
     /**
@@ -57,5 +60,15 @@ public class UserAccountDatabaseAPI {
     public String getUserRole(@NonNull String username){
         // TODO:
         return AccessLevels.ROLE_USER;
+    }
+
+    /**
+     * Get all users whose name contains the username provided
+     * @param username user username
+     * @return all match
+     */
+    public List<String> searchUsername(@NonNull String username){
+        // TODO:
+        return new ArrayList<>();
     }
 }
