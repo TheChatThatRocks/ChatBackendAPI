@@ -1,10 +1,9 @@
 package com.eina.chat.backendapi.controller;
 
-import com.eina.chat.backendapi.model.User;
 import com.eina.chat.backendapi.protocol.packages.*;
+import com.eina.chat.backendapi.protocol.packages.common.response.OperationFailResponse;
+import com.eina.chat.backendapi.protocol.packages.common.response.OperationSucceedResponse;
 import com.eina.chat.backendapi.protocol.packages.signup.request.AddAccountCommand;
-import com.eina.chat.backendapi.protocol.packages.signup.response.SignUpErrorResponse;
-import com.eina.chat.backendapi.protocol.packages.signup.response.SignUpSuccessResponse;
 import com.eina.chat.backendapi.security.AccessLevels;
 import com.eina.chat.backendapi.service.EncryptionAPI;
 import com.eina.chat.backendapi.service.MessageBrokerAPI;
@@ -40,8 +39,8 @@ public class SignUpController {
         if (basicPackage instanceof AddAccountCommand) {
             // Create account command
             AddAccountCommand addAccountCommand = (AddAccountCommand) basicPackage;
-            if (addAccountCommand.getUsername() != null && !addAccountCommand.getUsername().isBlank() &&
-                    addAccountCommand.getPassword() != null && !addAccountCommand.getPassword().isBlank() &&
+            if (addAccountCommand.getUsername() != null && !addAccountCommand.getUsername().isBlank() && addAccountCommand.getUsername().length() <= 50 &&
+                    addAccountCommand.getPassword() != null && 8 <= addAccountCommand.getPassword().length() && addAccountCommand.getPassword().length() <= 50 &&
                     !userAccountDatabaseAPI.checkUserExist(addAccountCommand.getUsername())) {
 
                 // Create user in database
@@ -50,10 +49,10 @@ public class SignUpController {
 
                 // Create user in the broker
                 messageBrokerAPI.createUser(addAccountCommand.getUsername());
-                return new SignUpSuccessResponse(basicPackage.getMessageId());
+                return new OperationSucceedResponse(basicPackage.getMessageId());
             } else
-                return new SignUpErrorResponse(basicPackage.getMessageId(), "Duplicated or invalid account");
+                return new OperationFailResponse(basicPackage.getMessageId(), TypesOfMessage.SIGN_UP_ERROR, "Duplicated or invalid account");
         } else
-            return new SignUpErrorResponse(basicPackage.getMessageId(), "Bad message format");
+            return new OperationFailResponse(basicPackage.getMessageId(), TypesOfMessage.SIGN_UP_ERROR, "Bad message format");
     }
 }

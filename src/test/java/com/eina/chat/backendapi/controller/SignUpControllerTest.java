@@ -1,10 +1,9 @@
 package com.eina.chat.backendapi.controller;
 
-import com.eina.chat.backendapi.model.User;
 import com.eina.chat.backendapi.protocol.packages.*;
+import com.eina.chat.backendapi.protocol.packages.common.response.OperationFailResponse;
+import com.eina.chat.backendapi.protocol.packages.common.response.OperationSucceedResponse;
 import com.eina.chat.backendapi.protocol.packages.signup.request.AddAccountCommand;
-import com.eina.chat.backendapi.protocol.packages.signup.response.SignUpErrorResponse;
-import com.eina.chat.backendapi.protocol.packages.signup.response.SignUpSuccessResponse;
 import com.eina.chat.backendapi.security.AccessLevels;
 import com.eina.chat.backendapi.service.MessageBrokerAPI;
 import com.eina.chat.backendapi.service.UserAccountDatabaseAPI;
@@ -104,7 +103,7 @@ public class SignUpControllerTest {
             @Override
             public void handleFrame(StompHeaders headers, Object payload) {
                 BasicPackage errorResponse = (BasicPackage) payload;
-                if (errorResponse.getMessageId() == messageId && errorResponse instanceof SignUpSuccessResponse)
+                if (errorResponse.getMessageId() == messageId && errorResponse instanceof OperationSucceedResponse)
                     messagesToReceive.countDown();
                 else {
                     failure.set(new Exception("Unexpected message received or sign-up fail"));
@@ -168,7 +167,7 @@ public class SignUpControllerTest {
             @Override
             public void handleFrame(StompHeaders headers, Object payload) {
                 BasicPackage errorResponse = (BasicPackage) payload;
-                if (errorResponse.getMessageId() == messageId && errorResponse instanceof SignUpErrorResponse)
+                if (errorResponse.getMessageId() == messageId && errorResponse instanceof OperationFailResponse)
                     messagesToReceive.countDown();
                 else {
                     failure.set(new Exception("Unexpected message received or sign-up fail"));

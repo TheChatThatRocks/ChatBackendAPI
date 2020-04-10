@@ -3,9 +3,8 @@ package com.eina.chat.backendapi.controller;
 import com.eina.chat.backendapi.protocol.packages.*;
 import com.eina.chat.backendapi.protocol.packages.message.request.*;
 import com.eina.chat.backendapi.protocol.packages.message.response.MessageFromUserResponse;
-import com.eina.chat.backendapi.protocol.packages.message.response.OperationSucceedResponse;
-import com.eina.chat.backendapi.protocol.packages.message.response.SendMessageToUserErrorResponse;
-import com.eina.chat.backendapi.protocol.packages.message.response.UnknownCommandResponse;
+import com.eina.chat.backendapi.protocol.packages.common.response.OperationSucceedResponse;
+import com.eina.chat.backendapi.protocol.packages.common.response.OperationFailResponse;
 import com.eina.chat.backendapi.rabbitmq.ReceiveHandler;
 import com.eina.chat.backendapi.service.EncryptionAPI;
 import com.eina.chat.backendapi.service.MessageBrokerAPI;
@@ -59,16 +58,17 @@ public class CommandAPIController {
 
     /**
      * Command endpoint
+     *
      * @param basicPackage command and arguments
-     * @param principal user info
+     * @param principal    user info
      * @return command response
      */
     @MessageMapping("/message")
     @SendToUser("/queue/error/message")
     public BasicPackage commandAPIMessageHandler(@Payload BasicPackage basicPackage, Principal principal) {
         // Select correct handler for the type of message
-        if (basicPackage instanceof AddUserToChatRoom)
-            return handlerAddUserToChatRoom(principal.getName(), (AddUserToChatRoom) basicPackage);
+        if (basicPackage instanceof AddUserToChatRoomCommand)
+            return handlerAddUserToChatRoom(principal.getName(), (AddUserToChatRoomCommand) basicPackage);
         else if (basicPackage instanceof CreateRoomCommand)
             return handlerCreateRoomCommand(principal.getName(), (CreateRoomCommand) basicPackage);
         else if (basicPackage instanceof DeleteAccountCommand)
@@ -87,19 +87,22 @@ public class CommandAPIController {
             return handlerSendMessageToRoomCommand(principal.getName(), (SendMessageToRoomCommand) basicPackage);
         else if (basicPackage instanceof SendMessageToUserCommand)
             return handlerSendMessageToUserCommand(principal.getName(), (SendMessageToUserCommand) basicPackage);
-        else return new UnknownCommandResponse(basicPackage.getMessageId());
+        else if (basicPackage instanceof JoinedRoomsChatHistoryCommand)
+            return handlerJoinedRoomsChatHistoryCommand(principal.getName(), (JoinedRoomsChatHistoryCommand) basicPackage);
+        else return new OperationFailResponse(basicPackage.getMessageId(), TypesOfMessage.UNKNOWN_COMMAND);
     }
 
     /**
      * Handle messages received from user with content of type AddUserToChatRoom
      *
-     * @param username          user username
-     * @param addUserToChatRoom content
+     * @param username                 user username
+     * @param addUserToChatRoomCommand content
      * @return command response
      */
-    public BasicPackage handlerAddUserToChatRoom(String username, AddUserToChatRoom addUserToChatRoom) {
+    public BasicPackage handlerAddUserToChatRoom(String username, AddUserToChatRoomCommand addUserToChatRoomCommand) {
+        logger.info("Received message from type AddUserToChatRoomCommand from: " + username);
         // TODO:
-        return new UnknownCommandResponse(addUserToChatRoom.getMessageId());
+        return new OperationFailResponse(addUserToChatRoomCommand.getMessageId(), TypesOfMessage.UNKNOWN_COMMAND);
     }
 
     /**
@@ -110,8 +113,9 @@ public class CommandAPIController {
      * @return command response
      */
     public BasicPackage handlerCreateRoomCommand(String username, CreateRoomCommand createRoomCommand) {
+        logger.info("Received message from type CreateRoomCommand from: " + username);
         // TODO:
-        return new UnknownCommandResponse(createRoomCommand.getMessageId());
+        return new OperationFailResponse(createRoomCommand.getMessageId(), TypesOfMessage.UNKNOWN_COMMAND);
     }
 
     /**
@@ -122,8 +126,9 @@ public class CommandAPIController {
      * @return command response
      */
     public BasicPackage handlerDeleteAccountCommand(String username, DeleteAccountCommand deleteAccountCommand) {
+        logger.info("Received message from type DeleteAccountCommand from: " + username);
         // TODO:
-        return new UnknownCommandResponse(deleteAccountCommand.getMessageId());
+        return new OperationFailResponse(deleteAccountCommand.getMessageId(), TypesOfMessage.UNKNOWN_COMMAND);
     }
 
     /**
@@ -134,8 +139,9 @@ public class CommandAPIController {
      * @return command response
      */
     public BasicPackage handlerDeleteRoomCommand(String username, DeleteRoomCommand deleteRoomCommand) {
+        logger.info("Received message from type DeleteRoomCommand from: " + username);
         // TODO:
-        return new UnknownCommandResponse(deleteRoomCommand.getMessageId());
+        return new OperationFailResponse(deleteRoomCommand.getMessageId(), TypesOfMessage.UNKNOWN_COMMAND);
     }
 
     /**
@@ -146,8 +152,9 @@ public class CommandAPIController {
      * @return command response
      */
     public BasicPackage handlerDeleteUserFromChatRoom(String username, DeleteUserFromChatRoom deleteUserFromChatRoom) {
+        logger.info("Received message from type DeleteUserFromChatRoom from: " + username);
         // TODO:
-        return new UnknownCommandResponse(deleteUserFromChatRoom.getMessageId());
+        return new OperationFailResponse(deleteUserFromChatRoom.getMessageId(), TypesOfMessage.UNKNOWN_COMMAND);
     }
 
     /**
@@ -158,8 +165,9 @@ public class CommandAPIController {
      * @return command response
      */
     public BasicPackage handlerSearchUserCommand(String username, SearchUserCommand searchUserCommand) {
+        logger.info("Received message from type SearchUserCommand from: " + username);
         // TODO:
-        return new UnknownCommandResponse(searchUserCommand.getMessageId());
+        return new OperationFailResponse(searchUserCommand.getMessageId(), TypesOfMessage.UNKNOWN_COMMAND);
     }
 
     /**
@@ -170,8 +178,9 @@ public class CommandAPIController {
      * @return command response
      */
     public BasicPackage handlerSendFileToRoomCommand(String username, SendFileToRoomCommand sendFileToRoomCommand) {
+        logger.info("Received message from type SendFileToRoomCommand from: " + username);
         // TODO:
-        return new UnknownCommandResponse(sendFileToRoomCommand.getMessageId());
+        return new OperationFailResponse(sendFileToRoomCommand.getMessageId(), TypesOfMessage.UNKNOWN_COMMAND);
     }
 
     /**
@@ -182,8 +191,9 @@ public class CommandAPIController {
      * @return command response
      */
     public BasicPackage handlerSendFileToUserCommand(String username, SendFileToUserCommand sendFileToUserCommand) {
+        logger.info("Received message from type SendFileToUserCommand from: " + username);
         // TODO:
-        return new UnknownCommandResponse(sendFileToUserCommand.getMessageId());
+        return new OperationFailResponse(sendFileToUserCommand.getMessageId(), TypesOfMessage.UNKNOWN_COMMAND);
     }
 
     /**
@@ -194,8 +204,9 @@ public class CommandAPIController {
      * @return command response
      */
     public BasicPackage handlerSendMessageToRoomCommand(String username, SendMessageToRoomCommand sendMessageToRoomCommand) {
+        logger.info("Received message from type SendMessageToRoomCommand from: " + username);
         // TODO:
-        return new UnknownCommandResponse(sendMessageToRoomCommand.getMessageId());
+        return new OperationFailResponse(sendMessageToRoomCommand.getMessageId(), TypesOfMessage.UNKNOWN_COMMAND);
     }
 
     /**
@@ -207,12 +218,27 @@ public class CommandAPIController {
      */
     public BasicPackage handlerSendMessageToUserCommand(String username, SendMessageToUserCommand sendMessageToUserCommand) {
         logger.info("Received message from type SendMessageToUserCommand from: " + username);
-        if (userAccountDatabaseAPI.checkUserExist(sendMessageToUserCommand.getUsername())) {
+        if (userAccountDatabaseAPI.checkUserExist(sendMessageToUserCommand.getUsername()) &&
+                !sendMessageToUserCommand.getMessage().isBlank() &&
+                sendMessageToUserCommand.getMessage().length() <= 500) {
             messageBrokerAPI.sendMessageToUser(username, sendMessageToUserCommand.getUsername(),
                     encryptionAPI.symmetricEncryptString(sendMessageToUserCommand.getMessage()));
             return new OperationSucceedResponse(sendMessageToUserCommand.getMessageId());
         } else
-            return new SendMessageToUserErrorResponse(sendMessageToUserCommand.getMessageId());
+            return new OperationFailResponse(sendMessageToUserCommand.getMessageId(), TypesOfMessage.SEND_MESSAGE_TO_USER_ERROR);
+    }
+
+    /**
+     * Handle messages received from user with content of type SendMessageToUserCommand
+     *
+     * @param username                      user username
+     * @param joinedRoomsChatHistoryCommand content
+     * @return command response
+     */
+    public BasicPackage handlerJoinedRoomsChatHistoryCommand(String username, JoinedRoomsChatHistoryCommand joinedRoomsChatHistoryCommand) {
+        logger.info("Received message from type JoinedRoomsChatHistoryCommand from: " + username);
+        // TODO:
+        return new OperationFailResponse(joinedRoomsChatHistoryCommand.getMessageId(), TypesOfMessage.UNKNOWN_COMMAND);
     }
 
     /**

@@ -5,16 +5,16 @@ import com.eina.chat.backendapi.protocol.packages.TypesOfMessage;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 
 @JsonTypeName(TypesOfMessage.ADD_USER_TO_CHAT_ROOM)
-public class AddUserToChatRoom extends BasicPackage {
+public class AddUserToChatRoomCommand extends BasicPackage {
     private String roomName;
     private String username;
 
     @SuppressWarnings("unused")
-    public AddUserToChatRoom() {
+    public AddUserToChatRoomCommand() {
     }
 
     @SuppressWarnings("unused")
-    public AddUserToChatRoom(int messageId, String roomName, String username) {
+    public AddUserToChatRoomCommand(int messageId, String roomName, String username) {
         super(messageId);
         this.roomName = roomName;
         this.username = username;
