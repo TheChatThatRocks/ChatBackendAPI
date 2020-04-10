@@ -6,7 +6,6 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 
 @JsonTypeName(TypesOfMessage.OPERATION_FAIL)
 public class OperationFailResponse extends BasicPackage {
-    private String typeOfFail;
     private String description;
 
     @SuppressWarnings("unused")
@@ -15,25 +14,9 @@ public class OperationFailResponse extends BasicPackage {
     }
 
     @SuppressWarnings("unused")
-    public OperationFailResponse(int messageId, String typeOfFail) {
+    public OperationFailResponse(int messageId, String description) {
         super(messageId);
-        this.typeOfFail = typeOfFail;
-        this.description = "";
-    }
-
-    @SuppressWarnings("unused")
-    public OperationFailResponse(int messageId, String typeOfFail, String description) {
-        super(messageId);
-        this.typeOfFail = typeOfFail;
         this.description = description;
-    }
-
-    public String getTypeOfFail() {
-        return typeOfFail;
-    }
-
-    public void setTypeOfFail(String typeOfFail) {
-        this.typeOfFail = typeOfFail;
     }
 
     public String getDescription() {

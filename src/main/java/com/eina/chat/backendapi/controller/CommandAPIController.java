@@ -13,6 +13,7 @@ import com.eina.chat.backendapi.service.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.EventListener;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -36,7 +37,6 @@ public class CommandAPIController {
     /**
      * Encryption API
      */
-    // TODO: Add encryption before comunications
     @Autowired
     private EncryptionAPI encryptionAPI;
 
@@ -65,6 +65,28 @@ public class CommandAPIController {
     private static final Logger logger = LoggerFactory.getLogger(CommandAPIController.class);
 
     /**
+     * Max file size in MB
+     */
+    @Value("${app.max-file-size:}")
+    private Integer maxFileSize;
+
+    /**
+     * Max message length
+     */
+    @Value("${app.max-message-length:}")
+    private Integer maxMessageLength;
+
+    /**
+     * Min and max room length
+     */
+    @Value("${app.max-room-length:}")
+    private Integer maxRoomLength;
+
+    @Value("${app.min-room-length:}")
+    private Integer minRoomLength;
+
+
+    /**
      * Command endpoint
      *
      * @param basicPackage command and arguments
@@ -77,27 +99,38 @@ public class CommandAPIController {
         // Select correct handler for the type of message
         if (basicPackage instanceof AddUserToChatRoomCommand)
             return handlerAddUserToChatRoom(principal.getName(), (AddUserToChatRoomCommand) basicPackage);
+
         else if (basicPackage instanceof CreateRoomCommand)
             return handlerCreateRoomCommand(principal.getName(), (CreateRoomCommand) basicPackage);
+
         else if (basicPackage instanceof DeleteAccountCommand)
             return handlerDeleteAccountCommand(principal.getName(), (DeleteAccountCommand) basicPackage);
+
         else if (basicPackage instanceof DeleteRoomCommand)
             return handlerDeleteRoomCommand(principal.getName(), (DeleteRoomCommand) basicPackage);
+
         else if (basicPackage instanceof DeleteUserFromChatRoom)
             return handlerDeleteUserFromChatRoom(principal.getName(), (DeleteUserFromChatRoom) basicPackage);
-        else if (basicPackage instanceof SearchUserCommand)
-            return handlerSearchUserCommand(principal.getName(), (SearchUserCommand) basicPackage);
+
+//        else if (basicPackage instanceof SearchUserCommand)
+//            return handlerSearchUserCommand(principal.getName(), (SearchUserCommand) basicPackage);
+
         else if (basicPackage instanceof SendFileToRoomCommand)
             return handlerSendFileToRoomCommand(principal.getName(), (SendFileToRoomCommand) basicPackage);
+
         else if (basicPackage instanceof SendFileToUserCommand)
             return handlerSendFileToUserCommand(principal.getName(), (SendFileToUserCommand) basicPackage);
+
         else if (basicPackage instanceof SendMessageToRoomCommand)
             return handlerSendMessageToRoomCommand(principal.getName(), (SendMessageToRoomCommand) basicPackage);
+
         else if (basicPackage instanceof SendMessageToUserCommand)
             return handlerSendMessageToUserCommand(principal.getName(), (SendMessageToUserCommand) basicPackage);
+
         else if (basicPackage instanceof JoinedRoomsChatHistoryCommand)
             return handlerJoinedRoomsChatHistoryCommand(principal.getName(), (JoinedRoomsChatHistoryCommand) basicPackage);
-        else return new OperationFailResponse(basicPackage.getMessageId(), TypesOfMessage.UNKNOWN_COMMAND);
+
+        else return new OperationFailResponse(basicPackage.getMessageId(), "Unknown command");
     }
 
     /**
@@ -109,15 +142,19 @@ public class CommandAPIController {
      */
     public BasicPackage handlerAddUserToChatRoom(String username, AddUserToChatRoomCommand addUserToChatRoomCommand) {
         logger.info("Received message from type AddUserToChatRoomCommand from: " + username);
-        if (addUserToChatRoomCommand.getRoomName() != null &&
-                addUserToChatRoomCommand.getUsername() != null &&
-                groupsManagementDatabaseAPI.checkIfIsGroupAdmin(addUserToChatRoomCommand.getRoomName(), username) &&
-                userAccountDatabaseAPI.checkUserExist(addUserToChatRoomCommand.getUsername())) {
+        if (addUserToChatRoomCommand.getRoomName() == null || addUserToChatRoomCommand.getUsername() == null ||
+                !userAccountDatabaseAPI.checkUserExist(addUserToChatRoomCommand.getUsername()))
+            return new OperationFailResponse(addUserToChatRoomCommand.getMessageId(), "Non-existent user or room");
+
+        else if (!groupsManagementDatabaseAPI.checkIfIsGroupAdmin(addUserToChatRoomCommand.getRoomName(), username))
+            return new OperationFailResponse(addUserToChatRoomCommand.getMessageId(), "You are not the room admin");
+
+        else {
             groupsManagementDatabaseAPI.addUserToGroup(addUserToChatRoomCommand.getRoomName(),
                     addUserToChatRoomCommand.getUsername());
+            messageBrokerAPI.addUserToGroup(addUserToChatRoomCommand.getUsername(), addUserToChatRoomCommand.getRoomName());
             return new OperationSucceedResponse(addUserToChatRoomCommand.getMessageId());
-        } else
-            return new OperationFailResponse(addUserToChatRoomCommand.getMessageId(), TypesOfMessage.ADD_USER_TO_CHAT_ROOM);
+        }
     }
 
     /**
@@ -129,13 +166,19 @@ public class CommandAPIController {
      */
     public BasicPackage handlerCreateRoomCommand(String username, CreateRoomCommand createRoomCommand) {
         logger.info("Received message from type CreateRoomCommand from: " + username);
-        if (!createRoomCommand.getRoomName().isBlank() &&
-                createRoomCommand.getRoomName().length() <= 50 &&
-                !groupsManagementDatabaseAPI.checkIfGroupExist(createRoomCommand.getRoomName())) {
+        if (createRoomCommand.getRoomName() == null || createRoomCommand.getRoomName().length() < minRoomLength ||
+                maxRoomLength < createRoomCommand.getRoomName().length())
+            return new OperationFailResponse(createRoomCommand.getMessageId(), "Room name must have between " +
+                    minRoomLength.toString() + " and " + maxRoomLength.toString() + " characters");
+
+        else if (groupsManagementDatabaseAPI.checkIfGroupExist(createRoomCommand.getRoomName()))
+            return new OperationFailResponse(createRoomCommand.getMessageId(), "The name of the room already exists");
+
+        else {
             groupsManagementDatabaseAPI.createGroup(createRoomCommand.getRoomName(), username);
+            messageBrokerAPI.addUserToGroup(username, createRoomCommand.getRoomName());
             return new OperationSucceedResponse(createRoomCommand.getMessageId());
-        } else
-            return new OperationFailResponse(createRoomCommand.getMessageId(), TypesOfMessage.DUPLICATED_ROOM_ERROR);
+        }
     }
 
     /**
@@ -164,6 +207,9 @@ public class CommandAPIController {
         // Delete user account
         userAccountDatabaseAPI.deleteUser(username);
 
+        // Delete user from broker
+        messageBrokerAPI.deleteUser(username);
+
         return new OperationSucceedResponse(deleteAccountCommand.getMessageId());
     }
 
@@ -177,8 +223,11 @@ public class CommandAPIController {
     public BasicPackage handlerDeleteRoomCommand(String username, DeleteRoomCommand deleteRoomCommand) {
         // TODO: May notify all group member of the deletion
         logger.info("Received message from type DeleteRoomCommand from: " + username);
-        if (deleteRoomCommand.getRoomName() != null &&
-                groupsManagementDatabaseAPI.checkIfIsGroupAdmin(deleteRoomCommand.getRoomName(), username)) {
+        if (deleteRoomCommand.getRoomName() == null ||
+                !groupsManagementDatabaseAPI.checkIfIsGroupAdmin(deleteRoomCommand.getRoomName(), username))
+            return new OperationFailResponse(deleteRoomCommand.getMessageId(), "You are not the room admin");
+
+        else {
             // Delete associated messages
             messageHistoryDatabaseAPI.deleteMessagesFromGroup(deleteRoomCommand.getRoomName());
             messageHistoryDatabaseAPI.deleteFilesFromGroup(deleteRoomCommand.getRoomName());
@@ -186,9 +235,11 @@ public class CommandAPIController {
             // Delete group
             groupsManagementDatabaseAPI.deleteGroup(deleteRoomCommand.getRoomName());
 
+            // Delete group from broker
+            messageBrokerAPI.deleteGroup(deleteRoomCommand.getRoomName());
+
             return new OperationSucceedResponse(deleteRoomCommand.getMessageId());
-        } else
-            return new OperationFailResponse(deleteRoomCommand.getMessageId(), TypesOfMessage.DELETE_UNKNOWN_ROOM_ERROR);
+        }
     }
 
     /**
@@ -201,30 +252,36 @@ public class CommandAPIController {
     public BasicPackage handlerDeleteUserFromChatRoom(String username, DeleteUserFromChatRoom deleteUserFromChatRoom) {
         // TODO: May notify of the deletion
         logger.info("Received message from type DeleteUserFromChatRoom from: " + username);
-        if (deleteUserFromChatRoom.getRoomName() != null &&
-                deleteUserFromChatRoom.getUsername() != null &&
-                groupsManagementDatabaseAPI.checkIfIsGroupAdmin(deleteUserFromChatRoom.getRoomName(), username) &&
-                groupsManagementDatabaseAPI.checkIfIsGroupMember(deleteUserFromChatRoom.getRoomName(),
-                        deleteUserFromChatRoom.getUsername())) {
+        if (deleteUserFromChatRoom.getRoomName() == null || deleteUserFromChatRoom.getUsername() == null)
+            return new OperationFailResponse(deleteUserFromChatRoom.getMessageId(), "Non-existent user or room");
+
+        else if (groupsManagementDatabaseAPI.checkIfIsGroupAdmin(deleteUserFromChatRoom.getRoomName(), username))
+            return new OperationFailResponse(deleteUserFromChatRoom.getMessageId(), "You are not the room admin");
+
+        else if (groupsManagementDatabaseAPI.checkIfIsGroupMember(deleteUserFromChatRoom.getRoomName(), deleteUserFromChatRoom.getUsername()))
+            return new OperationFailResponse(deleteUserFromChatRoom.getMessageId(), "Non-existent user in the room");
+
+        else {
             groupsManagementDatabaseAPI.removeUserFromGroup(deleteUserFromChatRoom.getRoomName(),
                     deleteUserFromChatRoom.getUsername());
+            messageBrokerAPI.removeUserFromGroup(deleteUserFromChatRoom.getUsername(), deleteUserFromChatRoom.getRoomName());
             return new OperationSucceedResponse(deleteUserFromChatRoom.getMessageId());
-        } else
-            return new OperationFailResponse(deleteUserFromChatRoom.getMessageId(), TypesOfMessage.DELETE_USER_FROM_CHAT_ROOM_ERROR);
+        }
     }
 
-    /**
-     * Handle messages received from user with content of type SearchUserCommand
-     *
-     * @param username          user username
-     * @param searchUserCommand content
-     * @return command response
-     */
-    public BasicPackage handlerSearchUserCommand(String username, SearchUserCommand searchUserCommand) {
-        logger.info("Received message from type SearchUserCommand from: " + username);
-        // TODO: This call looks unnecessary, wait until client been implemented
-        return new OperationFailResponse(searchUserCommand.getMessageId(), TypesOfMessage.UNKNOWN_COMMAND);
-    }
+//     This call looks unnecessary, wait until client been implemented to delete
+//    /**
+//     * Handle messages received from user with content of type SearchUserCommand
+//     *
+//     * @param username          user username
+//     * @param searchUserCommand content
+//     * @return command response
+//     */
+//    public BasicPackage handlerSearchUserCommand(String username, SearchUserCommand searchUserCommand) {
+//        logger.info("Received message from type SearchUserCommand from: " + username);
+//
+//        return new OperationFailResponse(searchUserCommand.getMessageId(), "Unknown command");
+//    }
 
     /**
      * Handle messages received from user with content of type SendFileToRoomCommand
@@ -235,8 +292,24 @@ public class CommandAPIController {
      */
     public BasicPackage handlerSendFileToRoomCommand(String username, SendFileToRoomCommand sendFileToRoomCommand) {
         logger.info("Received message from type SendFileToRoomCommand from: " + username);
-        // TODO:
-        return new OperationFailResponse(sendFileToRoomCommand.getMessageId(), TypesOfMessage.UNKNOWN_COMMAND);
+        if (sendFileToRoomCommand.getRoomName() == null)
+            return new OperationFailResponse(sendFileToRoomCommand.getMessageId(), "Non-existent room");
+
+        else if (!groupsManagementDatabaseAPI.checkIfIsGroupMember(sendFileToRoomCommand.getRoomName(), username))
+            return new OperationFailResponse(sendFileToRoomCommand.getMessageId(), "You are not member of the room");
+
+        else if (sendFileToRoomCommand.getFile() == null || sendFileToRoomCommand.getFile().length == 0 ||
+                sendFileToRoomCommand.getFile().length > maxFileSize * 1000000)
+            return new OperationFailResponse(sendFileToRoomCommand.getMessageId(), "File must have between 1 and "
+                    + (maxFileSize * 1000000) + " bytes");
+
+        else {
+            messageBrokerAPI.sendFileToGroup(username, sendFileToRoomCommand.getRoomName(),
+                    encryptionAPI.symmetricEncryptFile(sendFileToRoomCommand.getFile()));
+            messageHistoryDatabaseAPI.saveFileToGroup(username, sendFileToRoomCommand.getRoomName(),
+                    encryptionAPI.symmetricEncryptFile(sendFileToRoomCommand.getFile()));
+            return new OperationSucceedResponse(sendFileToRoomCommand.getMessageId());
+        }
     }
 
     /**
@@ -248,8 +321,19 @@ public class CommandAPIController {
      */
     public BasicPackage handlerSendFileToUserCommand(String username, SendFileToUserCommand sendFileToUserCommand) {
         logger.info("Received message from type SendFileToUserCommand from: " + username);
-        // TODO:
-        return new OperationFailResponse(sendFileToUserCommand.getMessageId(), TypesOfMessage.UNKNOWN_COMMAND);
+        if (sendFileToUserCommand.getUsername() == null || !userAccountDatabaseAPI.checkUserExist(sendFileToUserCommand.getUsername()))
+            return new OperationFailResponse(sendFileToUserCommand.getMessageId(), "Non-existent user");
+
+        else if (sendFileToUserCommand.getFile() == null || sendFileToUserCommand.getFile().length == 0 ||
+                sendFileToUserCommand.getFile().length > maxFileSize * 1000000)
+            return new OperationFailResponse(sendFileToUserCommand.getMessageId(), "File must have between 1 and "
+                    + (maxFileSize * 1000000) + " bytes");
+
+        else {
+            messageBrokerAPI.sendFileToUser(username, sendFileToUserCommand.getUsername(),
+                    encryptionAPI.symmetricEncryptFile(sendFileToUserCommand.getFile()));
+            return new OperationSucceedResponse(sendFileToUserCommand.getMessageId());
+        }
     }
 
     /**
@@ -261,8 +345,24 @@ public class CommandAPIController {
      */
     public BasicPackage handlerSendMessageToRoomCommand(String username, SendMessageToRoomCommand sendMessageToRoomCommand) {
         logger.info("Received message from type SendMessageToRoomCommand from: " + username);
-        // TODO:
-        return new OperationFailResponse(sendMessageToRoomCommand.getMessageId(), TypesOfMessage.UNKNOWN_COMMAND);
+        if (sendMessageToRoomCommand.getRoomName() == null)
+            return new OperationFailResponse(sendMessageToRoomCommand.getMessageId(), "Non-existent room");
+
+        else if (!groupsManagementDatabaseAPI.checkIfIsGroupMember(sendMessageToRoomCommand.getRoomName(), username))
+            return new OperationFailResponse(sendMessageToRoomCommand.getMessageId(), "You are not member of the room");
+
+        else if (sendMessageToRoomCommand.getMessage() == null || sendMessageToRoomCommand.getMessage().isBlank() ||
+                sendMessageToRoomCommand.getMessage().length() > maxMessageLength)
+            return new OperationFailResponse(sendMessageToRoomCommand.getMessageId(), "Message must have between 1 and "
+                    + maxMessageLength + " characters");
+
+        else {
+            messageBrokerAPI.sendMessageToGroup(username, sendMessageToRoomCommand.getRoomName(),
+                    encryptionAPI.symmetricEncryptString(sendMessageToRoomCommand.getMessage()));
+            messageHistoryDatabaseAPI.saveMessageFromGroup(username, sendMessageToRoomCommand.getRoomName(),
+                    encryptionAPI.symmetricEncryptString(sendMessageToRoomCommand.getMessage()));
+            return new OperationSucceedResponse(sendMessageToRoomCommand.getMessageId());
+        }
     }
 
     /**
@@ -274,14 +374,19 @@ public class CommandAPIController {
      */
     public BasicPackage handlerSendMessageToUserCommand(String username, SendMessageToUserCommand sendMessageToUserCommand) {
         logger.info("Received message from type SendMessageToUserCommand from: " + username);
-        if (userAccountDatabaseAPI.checkUserExist(sendMessageToUserCommand.getUsername()) &&
-                !sendMessageToUserCommand.getMessage().isBlank() &&
-                sendMessageToUserCommand.getMessage().length() <= 500) {
+        if (sendMessageToUserCommand.getUsername() == null || !userAccountDatabaseAPI.checkUserExist(sendMessageToUserCommand.getUsername()))
+            return new OperationFailResponse(sendMessageToUserCommand.getMessageId(), "Non-existent user");
+
+        else if (sendMessageToUserCommand.getMessage() == null || sendMessageToUserCommand.getMessage().isBlank() ||
+                sendMessageToUserCommand.getMessage().length() > maxMessageLength)
+            return new OperationFailResponse(sendMessageToUserCommand.getMessageId(), "Message must have between 1 and "
+                    + maxMessageLength + " characters");
+
+        else {
             messageBrokerAPI.sendMessageToUser(username, sendMessageToUserCommand.getUsername(),
                     encryptionAPI.symmetricEncryptString(sendMessageToUserCommand.getMessage()));
             return new OperationSucceedResponse(sendMessageToUserCommand.getMessageId());
-        } else
-            return new OperationFailResponse(sendMessageToUserCommand.getMessageId(), TypesOfMessage.SEND_MESSAGE_TO_USER_ERROR);
+        }
     }
 
     /**
@@ -293,8 +398,10 @@ public class CommandAPIController {
      */
     public BasicPackage handlerJoinedRoomsChatHistoryCommand(String username, JoinedRoomsChatHistoryCommand joinedRoomsChatHistoryCommand) {
         logger.info("Received message from type JoinedRoomsChatHistoryCommand from: " + username);
-        // TODO:
-        return new OperationFailResponse(joinedRoomsChatHistoryCommand.getMessageId(), TypesOfMessage.UNKNOWN_COMMAND);
+        // TODO:  This call looks unnecessary, wait until client been implemented but divide it in two calls looks more appropriate
+        // getGroupsFromUser
+        // getHistoryFromGroup
+        return new OperationFailResponse(joinedRoomsChatHistoryCommand.getMessageId(), "Unknown command");
     }
 
     /**
