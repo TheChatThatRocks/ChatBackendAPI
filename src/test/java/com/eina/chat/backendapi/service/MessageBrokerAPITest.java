@@ -32,7 +32,7 @@ public class MessageBrokerAPITest {
 
         final CountDownLatch messagesToReceive = new CountDownLatch(1);
 
-        messageBrokerAPI.addUserReceiverMessagesCallback(new ReceiveHandler() {
+        messageBrokerAPI.addUserReceiverMessagesCallback("user1", new ReceiveHandler() {
             @Override
             public void onUserMessageArrive(String user, String message) {
                 System.out.println("Ha llegado el mensaje");
@@ -43,10 +43,20 @@ public class MessageBrokerAPITest {
             public void onGroupMessageArrive(String user, String group, String message) {
 
             }
-        }, "user1");
+
+            @Override
+            public void onUserFileArrive(String username, byte[] file) {
+
+            }
+
+            @Override
+            public void onGroupFileArrive(String username, String group, byte[] file) {
+
+            }
+        });
 
 
-        messageBrokerAPI.addUserReceiverMessagesCallback(new ReceiveHandler() {
+        messageBrokerAPI.addUserReceiverMessagesCallback("user2", new ReceiveHandler() {
             @Override
             public void onUserMessageArrive(String user, String message) {
 
@@ -56,7 +66,17 @@ public class MessageBrokerAPITest {
             public void onGroupMessageArrive(String user, String group, String message) {
 
             }
-        }, "user2");
+
+            @Override
+            public void onUserFileArrive(String username, byte[] file) {
+
+            }
+
+            @Override
+            public void onGroupFileArrive(String username, String group, byte[] file) {
+
+            }
+        });
 
 
         messageBrokerAPI.sendMessageToUser("user2", "user1", "message");

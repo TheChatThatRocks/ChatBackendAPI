@@ -5,6 +5,8 @@ import com.eina.chat.backendapi.protocol.packages.*;
 import com.eina.chat.backendapi.protocol.packages.signup.request.AddAccountCommand;
 import com.eina.chat.backendapi.protocol.packages.signup.response.SignUpErrorResponse;
 import com.eina.chat.backendapi.protocol.packages.signup.response.SignUpSuccessResponse;
+import com.eina.chat.backendapi.security.AccessLevels;
+import com.eina.chat.backendapi.service.EncryptionAPI;
 import com.eina.chat.backendapi.service.MessageBrokerAPI;
 import com.eina.chat.backendapi.service.UserAccountDatabaseAPI;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +23,12 @@ public class SignUpController {
     private UserAccountDatabaseAPI userAccountDatabaseAPI;
 
     /**
+     * Encryption API
+     */
+    @Autowired
+    private EncryptionAPI encryptionAPI;
+
+    /**
      * Broker API
      */
     @Autowired
@@ -30,13 +38,21 @@ public class SignUpController {
     @SendToUser("/queue/error/sign-up")
     public BasicPackage signUpUser(BasicPackage basicPackage) {
         if (basicPackage instanceof AddAccountCommand) {
+            // Create account command
             AddAccountCommand addAccountCommand = (AddAccountCommand) basicPackage;
-            if (userAccountDatabaseAPI.createUser(new User(addAccountCommand.getUsername(), addAccountCommand.getPassword()))){
+            if (addAccountCommand.getUsername() != null && !addAccountCommand.getUsername().isBlank() &&
+                    addAccountCommand.getPassword() != null && !addAccountCommand.getPassword().isBlank() &&
+                    !userAccountDatabaseAPI.checkUserExist(addAccountCommand.getUsername())) {
+
+                // Create user in database
+                userAccountDatabaseAPI.createUser(addAccountCommand.getUsername(),
+                        encryptionAPI.asymmetricEncryptString(addAccountCommand.getPassword()), AccessLevels.ROLE_USER);
+
+                // Create user in the broker
                 messageBrokerAPI.createUser(addAccountCommand.getUsername());
                 return new SignUpSuccessResponse(basicPackage.getMessageId());
-            }
-            else
-                return new SignUpErrorResponse(basicPackage.getMessageId(), "Duplicated account");
+            } else
+                return new SignUpErrorResponse(basicPackage.getMessageId(), "Duplicated or invalid account");
         } else
             return new SignUpErrorResponse(basicPackage.getMessageId(), "Bad message format");
     }

@@ -7,6 +7,7 @@ import com.eina.chat.backendapi.protocol.packages.message.response.OperationSucc
 import com.eina.chat.backendapi.protocol.packages.message.response.SendMessageToUserErrorResponse;
 import com.eina.chat.backendapi.protocol.packages.message.response.UnknownCommandResponse;
 import com.eina.chat.backendapi.rabbitmq.ReceiveHandler;
+import com.eina.chat.backendapi.service.EncryptionAPI;
 import com.eina.chat.backendapi.service.MessageBrokerAPI;
 import com.eina.chat.backendapi.service.UserAccountDatabaseAPI;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +30,13 @@ public class CommandAPIController {
     private SimpMessagingTemplate simpMessagingTemplate;
 
     /**
+     * Encryption API
+     */
+    // TODO: Add encryption before comunications
+    @Autowired
+    private EncryptionAPI encryptionAPI;
+
+    /**
      * RabbitMQ API
      */
     @Autowired
@@ -46,12 +54,11 @@ public class CommandAPIController {
     public BasicPackage commandAPIMessageHandler(@Payload BasicPackage basicPackage, Principal principal) {
         if (basicPackage instanceof SendMessageToUserCommand) {
             SendMessageToUserCommand sendMessageToUser = (SendMessageToUserCommand) basicPackage;
-            if(userAccountDatabaseAPI.checkUserExist(sendMessageToUser.getUsername())){
+            if (userAccountDatabaseAPI.checkUserExist(sendMessageToUser.getUsername())) {
                 messageBrokerAPI.sendMessageToUser(principal.getName(), sendMessageToUser.getUsername(),
                         sendMessageToUser.getMessage());
                 return new OperationSucceedResponse(sendMessageToUser.getMessageId());
-            }
-            else
+            } else
                 return new SendMessageToUserErrorResponse(sendMessageToUser.getMessageId());
 
         } else return new UnknownCommandResponse(basicPackage.getMessageId());
@@ -67,7 +74,7 @@ public class CommandAPIController {
 
         if (simpDestination != null && simpDestination.equals("/user/queue/message") && user != null) {
             final String username = user.getName();
-            messageBrokerAPI.addUserReceiverMessagesCallback(new ReceiveHandler() {
+            messageBrokerAPI.addUserReceiverMessagesCallback(username, new ReceiveHandler() {
                 @Override
                 public void onUserMessageArrive(String fromUsername, String message) {
                     simpMessagingTemplate.convertAndSendToUser(username,
@@ -80,7 +87,17 @@ public class CommandAPIController {
                     // TODO: Complete
                 }
 
-            }, username);
+                @Override
+                public void onUserFileArrive(String username, byte[] file) {
+                    // TODO: Complete
+                }
+
+                @Override
+                public void onGroupFileArrive(String username, String group, byte[] file) {
+                    // TODO: Complete
+                }
+
+            });
         }
     }
 

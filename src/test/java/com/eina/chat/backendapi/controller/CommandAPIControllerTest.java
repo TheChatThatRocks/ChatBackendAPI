@@ -5,6 +5,8 @@ import com.eina.chat.backendapi.protocol.packages.*;
 import com.eina.chat.backendapi.protocol.packages.message.request.SendMessageToUserCommand;
 import com.eina.chat.backendapi.protocol.packages.message.response.MessageFromUserResponse;
 import com.eina.chat.backendapi.protocol.packages.message.response.OperationSucceedResponse;
+import com.eina.chat.backendapi.security.AccessLevels;
+import com.eina.chat.backendapi.service.MessageBrokerAPI;
 import com.eina.chat.backendapi.service.UserAccountDatabaseAPI;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,6 +51,10 @@ public class CommandAPIControllerTest {
     @Autowired
     private UserAccountDatabaseAPI userAccountDatabaseAPI;
 
+    // RabbitMQ API
+    @Autowired
+    private MessageBrokerAPI messageBrokerAPI;
+
     // Variables
     final private String nameUser1 = "testUser1";
     final private String nameUser2 = "testUser2";
@@ -61,22 +67,28 @@ public class CommandAPIControllerTest {
     public void setupForEach() {
         if (userAccountDatabaseAPI.checkUserExist(nameUser1)) {
             userAccountDatabaseAPI.deleteUser(nameUser1);
+            messageBrokerAPI.deleteUser(nameUser1);
         }
         if (userAccountDatabaseAPI.checkUserExist(nameUser2)) {
             userAccountDatabaseAPI.deleteUser(nameUser2);
+            messageBrokerAPI.deleteUser(nameUser2);
         }
 
-        userAccountDatabaseAPI.createUser(new User(nameUser1, passUser1));
-        userAccountDatabaseAPI.createUser(new User(nameUser2, passUser2));
+        userAccountDatabaseAPI.createUser(nameUser1, passUser1, AccessLevels.ROLE_USER);
+        userAccountDatabaseAPI.createUser(nameUser2, passUser2, AccessLevels.ROLE_USER);
+        messageBrokerAPI.createUser(nameUser1);
+        messageBrokerAPI.createUser(nameUser2);
     }
 
     @AfterEach
     public void deleteForEach() {
         if (userAccountDatabaseAPI.checkUserExist(nameUser1)) {
             userAccountDatabaseAPI.deleteUser(nameUser1);
+            messageBrokerAPI.deleteUser(nameUser1);
         }
         if (userAccountDatabaseAPI.checkUserExist(nameUser2)) {
             userAccountDatabaseAPI.deleteUser(nameUser2);
+            messageBrokerAPI.deleteUser(nameUser2);
         }
     }
 
