@@ -1,6 +1,5 @@
 package com.eina.chat.backendapi.security;
 
-import com.eina.chat.backendapi.model.User;
 import com.eina.chat.backendapi.service.EncryptionAPI;
 import com.eina.chat.backendapi.service.UserAccountDatabaseAPI;
 import lombok.NonNull;

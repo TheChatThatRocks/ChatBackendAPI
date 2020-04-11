@@ -7,7 +7,6 @@ import com.eina.chat.backendapi.protocol.packages.message.request.DeleteAccountC
 import com.eina.chat.backendapi.security.AccessLevels;
 import com.eina.chat.backendapi.service.GroupsManagementDatabaseAPI;
 import com.eina.chat.backendapi.service.MessageBrokerAPI;
-import com.eina.chat.backendapi.service.MessageHistoryDatabaseAPI;
 import com.eina.chat.backendapi.service.UserAccountDatabaseAPI;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -58,9 +57,6 @@ public class RemoveAccountCommandAPIControllerTest {
     @Autowired
     private GroupsManagementDatabaseAPI groupsManagementDatabaseAPI;
 
-    @Autowired
-    private MessageHistoryDatabaseAPI messageHistoryDatabaseAPI;
-
     // RabbitMQ API
     @Autowired
     private MessageBrokerAPI messageBrokerAPI;
@@ -77,15 +73,8 @@ public class RemoveAccountCommandAPIControllerTest {
         // Delete groups where are admin
         List<String> groupsWereAdminUser1 = groupsManagementDatabaseAPI.getAllGroupsWhereIsAdmin(nameAdminUser);
         for (String i : groupsWereAdminUser1){
-            messageHistoryDatabaseAPI.deleteFilesFromGroup(i);
-            messageHistoryDatabaseAPI.deleteMessagesFromGroup(i);
             messageBrokerAPI.deleteGroup(i);
         }
-
-        groupsManagementDatabaseAPI.deleteAllGroupsFromAdmin(nameAdminUser);
-
-        // Remove group membership
-        groupsManagementDatabaseAPI.removeUserFromAllGroups(nameAdminUser);
 
         // Delete users from broker
         messageBrokerAPI.deleteUser(nameAdminUser);

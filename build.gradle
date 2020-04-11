@@ -40,8 +40,16 @@ dependencies {
     testImplementation 'org.springframework.amqp:spring-rabbit-test'
     testImplementation 'org.springframework.security:spring-security-test'
 
+    // Database
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'com.h2database:h2:1.4.199'
+    /// runtimeOnly 'mysql:mysql-connector-java' // To work with MySQL
+
+
+
     // Apache common lang
     implementation'org.apache.commons:commons-lang3:3.10'
+
 
 }
 

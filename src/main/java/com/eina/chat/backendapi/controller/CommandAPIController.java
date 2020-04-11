@@ -189,17 +189,11 @@ public class CommandAPIController {
         // Delete all groups where is admin and the associated messages
         List<String> administeredGroups = groupsManagementDatabaseAPI.getAllGroupsWhereIsAdmin(username);
         for (String group : administeredGroups) {
-            messageHistoryDatabaseAPI.deleteMessagesFromGroup(group);
-            messageHistoryDatabaseAPI.deleteFilesFromGroup(group);
+            // TODO: Send message group members informing the deletion
 
             // Delete associated broker
             messageBrokerAPI.deleteGroup(group);
         }
-
-        groupsManagementDatabaseAPI.deleteAllGroupsFromAdmin(username);
-
-        // Delete the membership to all groups
-        groupsManagementDatabaseAPI.removeUserFromAllGroups(username);
 
         // Delete user account
         userAccountDatabaseAPI.deleteUser(username);
@@ -225,10 +219,6 @@ public class CommandAPIController {
             return new OperationFailResponse(deleteRoomCommand.getMessageId(), "You are not the room admin");
 
         else {
-            // Delete associated messages
-            messageHistoryDatabaseAPI.deleteMessagesFromGroup(deleteRoomCommand.getRoomName());
-            messageHistoryDatabaseAPI.deleteFilesFromGroup(deleteRoomCommand.getRoomName());
-
             // Delete group
             groupsManagementDatabaseAPI.deleteGroup(deleteRoomCommand.getRoomName());
 

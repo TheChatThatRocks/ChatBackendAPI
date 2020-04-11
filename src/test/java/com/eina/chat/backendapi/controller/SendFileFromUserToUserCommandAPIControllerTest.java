@@ -4,13 +4,10 @@ import com.eina.chat.backendapi.protocol.packages.BasicPackage;
 import com.eina.chat.backendapi.protocol.packages.common.response.OperationFailResponse;
 import com.eina.chat.backendapi.protocol.packages.common.response.OperationSucceedResponse;
 import com.eina.chat.backendapi.protocol.packages.message.request.SendFileToUserCommand;
-import com.eina.chat.backendapi.protocol.packages.message.request.SendMessageToUserCommand;
 import com.eina.chat.backendapi.protocol.packages.message.response.FileFromUserResponse;
-import com.eina.chat.backendapi.protocol.packages.message.response.MessageFromUserResponse;
 import com.eina.chat.backendapi.security.AccessLevels;
 import com.eina.chat.backendapi.service.GroupsManagementDatabaseAPI;
 import com.eina.chat.backendapi.service.MessageBrokerAPI;
-import com.eina.chat.backendapi.service.MessageHistoryDatabaseAPI;
 import com.eina.chat.backendapi.service.UserAccountDatabaseAPI;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -63,9 +60,6 @@ public class SendFileFromUserToUserCommandAPIControllerTest {
     @Autowired
     private GroupsManagementDatabaseAPI groupsManagementDatabaseAPI;
 
-    @Autowired
-    private MessageHistoryDatabaseAPI messageHistoryDatabaseAPI;
-
     // RabbitMQ API
     @Autowired
     private MessageBrokerAPI messageBrokerAPI;
@@ -91,24 +85,13 @@ public class SendFileFromUserToUserCommandAPIControllerTest {
         // Delete groups where are admin
         List<String> groupsWereAdminUser1 = groupsManagementDatabaseAPI.getAllGroupsWhereIsAdmin(nameUser1);
         for (String i : groupsWereAdminUser1){
-            messageHistoryDatabaseAPI.deleteFilesFromGroup(i);
-            messageHistoryDatabaseAPI.deleteMessagesFromGroup(i);
             messageBrokerAPI.deleteGroup(i);
         }
 
         List<String> groupsWereAdminUser2 = groupsManagementDatabaseAPI.getAllGroupsWhereIsAdmin(nameUser1);
         for (String i : groupsWereAdminUser2){
-            messageHistoryDatabaseAPI.deleteFilesFromGroup(i);
-            messageHistoryDatabaseAPI.deleteMessagesFromGroup(i);
             messageBrokerAPI.deleteGroup(i);
         }
-
-        groupsManagementDatabaseAPI.deleteAllGroupsFromAdmin(nameUser1);
-        groupsManagementDatabaseAPI.deleteAllGroupsFromAdmin(nameUser2);
-
-        // Remove group membership
-        groupsManagementDatabaseAPI.removeUserFromAllGroups(nameUser1);
-        groupsManagementDatabaseAPI.removeUserFromAllGroups(nameUser2);
 
         // Delete users from broker
         messageBrokerAPI.deleteUser(nameUser1);

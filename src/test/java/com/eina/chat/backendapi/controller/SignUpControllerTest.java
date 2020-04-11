@@ -7,7 +7,6 @@ import com.eina.chat.backendapi.protocol.packages.signup.request.AddAccountComma
 import com.eina.chat.backendapi.security.AccessLevels;
 import com.eina.chat.backendapi.service.GroupsManagementDatabaseAPI;
 import com.eina.chat.backendapi.service.MessageBrokerAPI;
-import com.eina.chat.backendapi.service.MessageHistoryDatabaseAPI;
 import com.eina.chat.backendapi.service.UserAccountDatabaseAPI;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,9 +47,6 @@ public class SignUpControllerTest {
     @Autowired
     private GroupsManagementDatabaseAPI groupsManagementDatabaseAPI;
 
-    @Autowired
-    private MessageHistoryDatabaseAPI messageHistoryDatabaseAPI;
-
     // RabbitMQ API
     @Autowired
     private MessageBrokerAPI messageBrokerAPI;
@@ -67,15 +63,8 @@ public class SignUpControllerTest {
         // Delete groups where are admin
         List<String> groupsWereAdminUser1 = groupsManagementDatabaseAPI.getAllGroupsWhereIsAdmin(username);
         for (String i : groupsWereAdminUser1){
-            messageHistoryDatabaseAPI.deleteFilesFromGroup(i);
-            messageHistoryDatabaseAPI.deleteMessagesFromGroup(i);
             messageBrokerAPI.deleteGroup(i);
         }
-
-        groupsManagementDatabaseAPI.deleteAllGroupsFromAdmin(username);
-
-        // Remove group membership
-        groupsManagementDatabaseAPI.removeUserFromAllGroups(username);
 
         // Delete users from broker
         messageBrokerAPI.deleteUser(username);

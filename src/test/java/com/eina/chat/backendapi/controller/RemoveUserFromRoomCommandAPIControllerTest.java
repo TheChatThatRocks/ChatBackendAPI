@@ -7,7 +7,6 @@ import com.eina.chat.backendapi.protocol.packages.message.request.RemoveUserFrom
 import com.eina.chat.backendapi.security.AccessLevels;
 import com.eina.chat.backendapi.service.GroupsManagementDatabaseAPI;
 import com.eina.chat.backendapi.service.MessageBrokerAPI;
-import com.eina.chat.backendapi.service.MessageHistoryDatabaseAPI;
 import com.eina.chat.backendapi.service.UserAccountDatabaseAPI;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -58,8 +57,6 @@ public class RemoveUserFromRoomCommandAPIControllerTest {
     @Autowired
     private GroupsManagementDatabaseAPI groupsManagementDatabaseAPI;
 
-    @Autowired
-    private MessageHistoryDatabaseAPI messageHistoryDatabaseAPI;
 
     // RabbitMQ API
     @Autowired
@@ -83,24 +80,13 @@ public class RemoveUserFromRoomCommandAPIControllerTest {
         // Delete groups where are admin
         List<String> groupsWereAdminUser1 = groupsManagementDatabaseAPI.getAllGroupsWhereIsAdmin(nameAdminUser);
         for (String i : groupsWereAdminUser1){
-            messageHistoryDatabaseAPI.deleteFilesFromGroup(i);
-            messageHistoryDatabaseAPI.deleteMessagesFromGroup(i);
             messageBrokerAPI.deleteGroup(i);
         }
 
         List<String> groupsWereAdminUser2 = groupsManagementDatabaseAPI.getAllGroupsWhereIsAdmin(nameMemberUser);
         for (String i : groupsWereAdminUser2){
-            messageHistoryDatabaseAPI.deleteFilesFromGroup(i);
-            messageHistoryDatabaseAPI.deleteMessagesFromGroup(i);
             messageBrokerAPI.deleteGroup(i);
         }
-
-        groupsManagementDatabaseAPI.deleteAllGroupsFromAdmin(nameAdminUser);
-        groupsManagementDatabaseAPI.deleteAllGroupsFromAdmin(nameMemberUser);
-
-        // Remove group membership
-        groupsManagementDatabaseAPI.removeUserFromAllGroups(nameAdminUser);
-        groupsManagementDatabaseAPI.removeUserFromAllGroups(nameMemberUser);
 
         // Delete users from broker
         messageBrokerAPI.deleteUser(nameAdminUser);
@@ -115,8 +101,6 @@ public class RemoveUserFromRoomCommandAPIControllerTest {
         messageBrokerAPI.createUser(nameMemberUser);
 
         // Delete room
-        messageHistoryDatabaseAPI.deleteFilesFromGroup(roomName);
-        messageHistoryDatabaseAPI.deleteMessagesFromGroup(roomName);
         messageBrokerAPI.deleteGroup(roomName);
 
         // Create room
