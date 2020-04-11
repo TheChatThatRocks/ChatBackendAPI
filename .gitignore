@@ -4,6 +4,8 @@ build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**
 !**/src/test/**
+local.properties
+.directory
 
 ### STS ###
 .apt_generated
@@ -30,3 +32,6 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### Logging ###
+.log/
