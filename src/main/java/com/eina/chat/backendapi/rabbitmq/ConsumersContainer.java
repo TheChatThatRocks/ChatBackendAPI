@@ -1,7 +1,7 @@
 package com.eina.chat.backendapi.rabbitmq;
 
 import org.springframework.amqp.rabbit.annotation.Queue;
-import org.springframework.amqp.rabbit.listener.DirectMessageListenerContainer;
+import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.stereotype.Component;
 import java.util.Map;
@@ -18,7 +18,7 @@ public class ConsumersContainer {
         consumers = new ConcurrentHashMap<>();
     }
 
-    public void addConsumer(String username, SimpleMessageListenerContainer listener){
+    public void addConsumer(String username,SimpleMessageListenerContainer listener){
         consumers.put(username, listener);
     }
 

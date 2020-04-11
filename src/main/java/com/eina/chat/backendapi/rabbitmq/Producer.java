@@ -1,6 +1,9 @@
 package com.eina.chat.backendapi.rabbitmq;
 
 import org.springframework.amqp.core.Exchange;
+import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessageBuilder;
+import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -13,7 +16,7 @@ public class Producer {
     private Exchange topic;
 
 
-    public Producer(){}
+    public Producer(){ }
 
     /***
      * Send message to the topic exchange
@@ -22,6 +25,10 @@ public class Producer {
      * @param message content of message
      */
     public void send(String key, String message) {
-        template.convertAndSend(topic.getName(), key, message);
+        MessageProperties msgProp = new MessageProperties();
+//        msgProp.setContentType("json");
+        Message msg = new Message(message.getBytes(), msgProp);
+        template.send(key, msg);
+//        template.convertAndSend(topic.getName(), key, MessageBuilder.withBody(message.getBytes()).andProperties(msgProp).build());
     }
 }

@@ -9,9 +9,13 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
+import org.springframework.amqp.rabbit.listener.DirectMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
+import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.AbstractMap;
 
 @Service
 public class MessageBrokerAPI {
@@ -22,7 +26,7 @@ public class MessageBrokerAPI {
     private RabbitAdmin rabbitAdmin;
 
     @Autowired
-    private ConsumersContainer consumersContainer;
+    private ConsumersContainer consumerListeners;
 
     @Autowired
     private Producer producer;
@@ -33,6 +37,10 @@ public class MessageBrokerAPI {
     @Autowired
     Logger logger;
 
+    // TODO: create group
+    // TODO: delete group
+    // TODO: remove localhost msg on groupsend?
+
     /**
      * Notify broker than a new user have been created
      *
@@ -42,9 +50,9 @@ public class MessageBrokerAPI {
         // Create a queue
         Queue myQueue = QueueBuilder.durable(username).build();
         rabbitAdmin.declareQueue(myQueue);
-        Binding privateMsg = BindingBuilder.bind(myQueue).to(topic).with("*.*." + username);
+        Binding privateMsg = BindingBuilder.bind(myQueue).to(topic).with("*.any." + username);
         rabbitAdmin.declareBinding(privateMsg);
-        logger.info("[" + username + "] User has been created");
+        logger.info("[" + username + "] User created");
     }
 
     /**
@@ -54,9 +62,11 @@ public class MessageBrokerAPI {
      */
     public void deleteUser(@NonNull String username) {
         // Disconnect and delete user
-        deleteUserReceiverMessagesCallback(username);
+        if(consumerListeners.getConsumer(username)!= null){
+            deleteUserReceiverMessagesCallback(username);
+        }
         rabbitAdmin.deleteQueue(username);
-        logger.info("[" + username + "] User has been deleted");
+        logger.info("[" + username + "] User deleted");
     }
 
     /**
@@ -66,7 +76,9 @@ public class MessageBrokerAPI {
      * @param groupName group name
      */
     public void addUserToGroup(@NonNull String username, @NonNull String groupName) {
-        // TODO:
+        Binding groupBind = BindingBuilder.bind(new Queue(username)).to(topic).with("*." + groupName + ".any");
+        rabbitAdmin.declareBinding(groupBind);
+        logger.info("[" + username + "] Added to group: " + groupName);
     }
 
     /**
@@ -76,7 +88,9 @@ public class MessageBrokerAPI {
      * @param groupName group name
      */
     public void removeUserFromGroup(@NonNull String username, @NonNull String groupName) {
-        // TODO:
+        Binding groupBind = BindingBuilder.bind(new Queue(username)).to(topic).with("*." + groupName + ".any");
+        rabbitAdmin.removeBinding(groupBind);
+        logger.info("[" + username + "] Removed from group: " + groupName);
     }
 
     /**
@@ -87,13 +101,12 @@ public class MessageBrokerAPI {
      */
     public void addUserReceiverMessagesCallback(@NonNull String username, @NonNull ReceiveHandler callable) {
         //Create a listener/consumer
-        SimpleMessageListenerContainer  listenerContainer = new Consumer(username, callable).listenerContainer(connectionFactory);
+        SimpleMessageListenerContainer listenerContainer = new Consumer(callable).createListenerContainer(username, connectionFactory);
 
         //Start the consumer and add to the list
-        consumersContainer.addConsumer(username, listenerContainer);
+        consumerListeners.addConsumer(username, listenerContainer);
         listenerContainer.start();
         logger.info("[" + username + "] Connecting...");
-
     }
 
     /**
@@ -102,9 +115,14 @@ public class MessageBrokerAPI {
      * @param username user username
      */
     public void deleteUserReceiverMessagesCallback(@NonNull String username) {
-        consumersContainer.getConsumer(username).stop();
-        consumersContainer.deleteConsumer(username);
-        logger.info("[" + username + "] Disconnecting...");
+        SimpleMessageListenerContainer listenerContainer = consumerListeners.getConsumer(username);
+        if (listenerContainer != null){
+            consumerListeners.getConsumer(username).stop();
+            consumerListeners.deleteConsumer(username);
+            logger.info("[" + username + "] Disconnecting...");
+        } else {
+            logger.error("[" + username + "] Not exists");
+        }
     }
 
 
@@ -116,7 +134,7 @@ public class MessageBrokerAPI {
      * @param encryptedMessage encrypted message to send
      */
     public void sendMessageToUser(String usernameUserFrom, String usernameUserTo, String encryptedMessage) {
-        producer.send(usernameUserFrom + ".*." + usernameUserTo, encryptedMessage);
+        producer.send(usernameUserFrom + ".any." + usernameUserTo, encryptedMessage);
         logger.info("[" + usernameUserFrom + "] Sent to [" + usernameUserTo + "]: " + encryptedMessage);
     }
 
@@ -128,7 +146,9 @@ public class MessageBrokerAPI {
      * @param encryptedMessage encrypted message to send
      */
     public void sendMessageToGroup(String usernameUserFrom, String groupNameGroupTo, String encryptedMessage) {
-        // TODO:
+        //TODO: check if user belong to group
+        producer.send(usernameUserFrom + "." + groupNameGroupTo + ".any", encryptedMessage);
+        logger.info("[" + usernameUserFrom + "] Sent to group [" + groupNameGroupTo + "]: " + encryptedMessage);
     }
 
     /**

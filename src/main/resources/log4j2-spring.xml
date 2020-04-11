@@ -24,7 +24,7 @@
 
     <Loggers>
         <AsyncLogger name="rabbit" additivity="false" level="debug">
-            <AppenderRef ref="rabbitAPI" />
+<!--            <AppenderRef ref="rabbitAPI" />-->
             <AppenderRef ref="console"  />
         </AsyncLogger>
 
