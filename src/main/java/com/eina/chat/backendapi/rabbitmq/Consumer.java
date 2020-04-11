@@ -12,18 +12,20 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.listener.DirectMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.util.List;
 
+import static org.apache.commons.lang3.math.NumberUtils.min;
+
 public class Consumer implements MessageListener{
+    private final byte MAX_LEN_FILE_CONTENT_LOG = 25;
 
     private static final Logger logger = LogManager.getLogger("rabbit");
-//    private final String username;
     private final ReceiveHandler userReceiveHandler;
 
     public Consumer(ReceiveHandler apiHandlerMessage){
         super();
-//        this.username = username;
         this.userReceiveHandler = apiHandlerMessage;
     }
 
@@ -50,22 +52,42 @@ public class Consumer implements MessageListener{
      */
     @Override
     public void onMessage(Message message) {
-        String body = new String(message.getBody());
         MessageProperties msgProperties = message.getMessageProperties();
         String[] agents = msgProperties.getReceivedRoutingKey().split("\\.", 3);
         if (agents.length == 3){
-            if (agents[1].equals("any")){// It's a private msg
-                userReceiveHandler.onUserMessageArrive(agents[2], body);
-                logger.info("[" + agents[2] + "] Received from [" + agents[0] + "]: " + body);
-                return;
-            }else if (agents[2].equals("any")){
-                String recvUser = msgProperties.getConsumerQueue();
-                userReceiveHandler.onGroupMessageArrive(recvUser, agents[1], body);
-                logger.info("[" + recvUser + "] Received from group [" + agents[1] + "]: " + body);
-                return;
+            if (msgProperties.getContentType().equals("TEXT")){
+                String body = new String(message.getBody());
+                if (agents[1].equals("any")){// It's a private msg
+                    userReceiveHandler.onUserMessageArrive(agents[2], body);
+                    logger.info("[" + agents[2] + "] Received from [" + agents[0] + "]: " + body);
+                    return;
+                }else if (agents[2].equals("any")){
+                    String recvUser = msgProperties.getConsumerQueue();
+                    userReceiveHandler.onGroupMessageArrive(recvUser, agents[1], body);
+                    logger.info("[" + recvUser + "] Received from group [" + agents[1] + "]: " + body);
+                    return;
+                }
+                logger.error("Bad routing key format: " + msgProperties.getReceivedRoutingKey() +
+                        "Message received: " + body);
             }
+            else if (msgProperties.getContentType().equals("FILE")) {
+                byte[] body = message.getBody();
+                String introFile = new String(body, 0, min(body.length, MAX_LEN_FILE_CONTENT_LOG)) + "...";
+                if (agents[1].equals("any")){// It's a private msg
+                    userReceiveHandler.onUserFileArrive(agents[2], body);
+                    logger.info("[" + agents[2] + "] Received from [" + agents[0] + "]: " + introFile );
+                    return;
+                }else if (agents[2].equals("any")){
+                    String recvUser = msgProperties.getConsumerQueue();
+                    userReceiveHandler.onGroupFileArrive(recvUser, agents[1], body);
+                    logger.info("[" + recvUser + "] Received from group [" + agents[1] + "]: " + introFile );
+                    return;
+                }
+                logger.error("Bad routing key format: " + msgProperties.getReceivedRoutingKey() +
+                        "File received: " + introFile);
+            }
+
         }
-        logger.error("Bad routing key format: " + msgProperties.getReceivedRoutingKey() + "Received: " + body);
     }
 
 

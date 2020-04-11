@@ -1,15 +1,14 @@
 package com.eina.chat.backendapi.service;
 
-import com.eina.chat.backendapi.model.User;
+import com.eina.chat.backendapi.protocol.packages.message.request.SendFileToUserCommand;
 import com.eina.chat.backendapi.rabbitmq.ReceiveHandler;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
-import org.springframework.amqp.core.Message;
+import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.ui.context.Theme;
+import org.springframework.util.Assert;
 
+import java.lang.reflect.Array;
+import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -45,10 +44,18 @@ public class MessageBrokerAPITest {
         }
     }
 
-    @BeforeAll
+    @BeforeEach
     public void setup() {
+        messageBrokerAPI.deleteUser("user1");
+        messageBrokerAPI.deleteUser("user2");
     }
 
+    @AfterAll
+    public void clean() {
+        messageBrokerAPI.deleteUser("user1");
+        messageBrokerAPI.deleteUser("user2");
+        messageBrokerAPI.deleteUser("sender");
+    }
 
 
     @Test
@@ -67,7 +74,6 @@ public class MessageBrokerAPITest {
                 else fail("Unknown user");
             }
         }
-
         messageBrokerAPI.createUser("user2");
         messageBrokerAPI.createUser("user1");
         messageBrokerAPI.addUserReceiverMessagesCallback("user1", new UserListener());
@@ -114,8 +120,6 @@ public class MessageBrokerAPITest {
             }
         }
 
-        messageBrokerAPI.deleteUser("user1");
-        messageBrokerAPI.deleteUser("user2");
         messageBrokerAPI.createUser("user1");
         messageBrokerAPI.createUser("user2");
         messageBrokerAPI.createUser("sender");
@@ -171,5 +175,98 @@ public class MessageBrokerAPITest {
         messageBrokerAPI.deleteUserReceiverMessagesCallback("user1");
         messageBrokerAPI.deleteUserReceiverMessagesCallback("user2");
 
+    }
+
+    @Test
+    public void sendFileFromUserToUser() throws Exception {
+        final Semaphore user1 = new Semaphore(0);
+        final Semaphore user2 = new Semaphore(0);
+
+
+        byte[] fileToSend = ("Hi!\nDon't be scared by what I'm gonna tell you: this\n" +
+                "is the best chat engine ever created. It will keep mankind\n" +
+                "socked for the coming centuries...").getBytes();
+
+        class UserListener extends ReceiveHandlerTest {
+            @Override
+            public void onUserFileArrive(String username, byte[] file) {
+                if (username.equals("user1"))
+                    user1.release();
+                else if (username.equals("user2"))
+                    user2.release();
+                else fail("Unknown user");
+                assert (Arrays.equals(file, fileToSend)): "File content has changed";
+            }
+        }
+
+        messageBrokerAPI.createUser("user2");
+        messageBrokerAPI.createUser("user1");
+        messageBrokerAPI.addUserReceiverMessagesCallback("user1", new UserListener());
+        messageBrokerAPI.addUserReceiverMessagesCallback("user2", new UserListener());
+
+        messageBrokerAPI.sendFileToUser("user1", "user2", fileToSend);
+        assert (user2.tryAcquire(5, TimeUnit.SECONDS)): "User 2 hasn't received message";
+        messageBrokerAPI.sendFileToUser("user2", "user1", fileToSend);
+        assert (user1.tryAcquire(5, TimeUnit.SECONDS)): "User 1 hasn't received message";
+
+        // Check user 2 doesn't receive msg until it's connected
+        messageBrokerAPI.deleteUserReceiverMessagesCallback("user1");
+        messageBrokerAPI.sendFileToUser("user2", "user1", fileToSend);
+        assert (!user1.tryAcquire(5, TimeUnit.SECONDS)): "User1 received message while disconnected";
+        messageBrokerAPI.addUserReceiverMessagesCallback("user1", new UserListener());
+        assert (user1.tryAcquire(5, TimeUnit.SECONDS)): "User1 hasn't received some messages";
+        messageBrokerAPI.deleteUserReceiverMessagesCallback("user1");
+        messageBrokerAPI.deleteUserReceiverMessagesCallback("user2");
+    }
+
+
+    @Test
+    public void sendFileFromUserToGroup() throws Exception {
+        final Semaphore group1 = new Semaphore(0);
+        final Semaphore group2 = new Semaphore(0);
+        final Semaphore user1 = new Semaphore(0);
+        final Semaphore user2 = new Semaphore(0);
+
+
+        byte[] fileToSend = ("Hi!\nDon't be scared by what I'm gonna tell you: this\n" +
+                            "is the best chat engine ever created. It will keep mankind\n" +
+                            "socked for the coming centuries...").getBytes();
+
+        class UserListener extends ReceiveHandlerTest {
+            @Override
+            public void onGroupFileArrive(String username, String group, byte[] file) {
+                if (group.equals("group1")){
+                    group1.release();
+                }else if (group.equals("group2")){
+                    group2.release();
+                }else fail("Unknown group");
+                if (username.equals("user1"))
+                    user1.release();
+                else if (username.equals("user2"))
+                    user2.release();
+                else fail("Unknown user");
+                assert (Arrays.equals(file, fileToSend)): "File content has changed";
+            }
+        }
+
+        messageBrokerAPI.createUser("user1");
+        messageBrokerAPI.createUser("user2");
+        messageBrokerAPI.createUser("sender");
+        messageBrokerAPI.addUserReceiverMessagesCallback("user1", new UserListener());
+        messageBrokerAPI.addUserReceiverMessagesCallback("user2", new UserListener());
+
+
+        // Message sent to empty group doesn't arrive
+        messageBrokerAPI.sendFileToGroup("sender", "group1", fileToSend);
+        assert (!group1.tryAcquire( 10, TimeUnit.SECONDS)): "User1 or user2 have received group file and not added to group";
+
+
+        // Group with 2 users
+        messageBrokerAPI.addUserToGroup("user2", "group1");
+        messageBrokerAPI.addUserToGroup("user1", "group1");
+        messageBrokerAPI.sendFileToGroup("sender", "group1", fileToSend);
+        assert (group1.tryAcquire(2, 5, TimeUnit.SECONDS)): "group1 hasn't received 2nd message";
+        assert (user1.tryAcquire( 5, TimeUnit.SECONDS)): "User1 hasn't received 2nd group message from group1";
+        assert (user2.tryAcquire( 5, TimeUnit.SECONDS)): "User2 hasn't received 1st group message from group1";
     }
 }

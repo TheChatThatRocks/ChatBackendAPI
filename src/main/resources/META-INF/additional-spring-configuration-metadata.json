@@ -44,6 +44,11 @@
       "name": "app.min-room-length",
       "type": "java.lang.Integer",
       "description": "Min room length."
+    },
+    {
+      "name": "logging.max-size-message-content",
+      "type": "java.lang.Integer",
+      "description": "Max len of content message on the logger."
     }
   ]
 }

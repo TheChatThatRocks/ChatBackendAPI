@@ -24,11 +24,21 @@ public class Producer {
      *            For private msg group should be any and for group msg user is any.
      * @param message content of message
      */
-    public void send(String key, String message) {
+    public void sendMessage(String key, String message) {
         MessageProperties msgProp = new MessageProperties();
-//        msgProp.setContentType("json");
-        Message msg = new Message(message.getBytes(), msgProp);
-        template.send(key, msg);
-//        template.convertAndSend(topic.getName(), key, MessageBuilder.withBody(message.getBytes()).andProperties(msgProp).build());
+        msgProp.setContentType("TEXT");
+        template.convertAndSend(key, MessageBuilder.withBody(message.getBytes()).andProperties(msgProp).build());
+    }
+
+    /**
+     * Send file to the topic exchange
+     * @param key topic use it to bind the msg to a queue. Format: from.group.to.
+     *            For private msg group should be any and for group msg user is any.
+     * @param file content of file
+     */
+    public void sendFile(String key, byte[]  file) {
+        MessageProperties msgProp = new MessageProperties();
+        msgProp.setContentType("FILE");
+        template.convertAndSend(topic.getName(), key, MessageBuilder.withBody(file).andProperties(msgProp).build());
     }
 }

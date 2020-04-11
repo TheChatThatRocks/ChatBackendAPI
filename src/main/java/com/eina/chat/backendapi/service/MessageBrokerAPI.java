@@ -9,16 +9,20 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
-import org.springframework.amqp.rabbit.listener.DirectMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
-import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.util.AbstractMap;
+
+import static org.apache.commons.lang3.math.NumberUtils.min;
 
 @Service
 public class MessageBrokerAPI {
+
+    @Value("${logging.max-size-message-content:25}")
+    private byte MAX_LEN_FILE_CONTENT_TO_LOG;
+
     @Autowired
     private ConnectionFactory connectionFactory;
 
@@ -143,8 +147,8 @@ public class MessageBrokerAPI {
      * @param encryptedMessage encrypted message to send
      */
     public void sendMessageToUser(String usernameUserFrom, String usernameUserTo, String encryptedMessage) {
-        producer.send(usernameUserFrom + ".any." + usernameUserTo, encryptedMessage);
-        logger.info("[" + usernameUserFrom + "] Sent to [" + usernameUserTo + "]: " + encryptedMessage);
+        producer.sendMessage(usernameUserFrom + ".any." + usernameUserTo, encryptedMessage);
+        logger.info("[" + usernameUserFrom + "] Sent message to [" + usernameUserTo + "]: " + encryptedMessage);
     }
 
     /**
@@ -156,8 +160,8 @@ public class MessageBrokerAPI {
      */
     public void sendMessageToGroup(String usernameUserFrom, String groupNameGroupTo, String encryptedMessage) {
         //TODO: check if user belong to group
-        producer.send(usernameUserFrom + "." + groupNameGroupTo + ".any", encryptedMessage);
-        logger.info("[" + usernameUserFrom + "] Sent to group [" + groupNameGroupTo + "]: " + encryptedMessage);
+        producer.sendMessage(usernameUserFrom + "." + groupNameGroupTo + ".any", encryptedMessage);
+        logger.info("[" + usernameUserFrom + "] Sent message to group [" + groupNameGroupTo + "]: " + encryptedMessage);
     }
 
     /**
@@ -168,7 +172,9 @@ public class MessageBrokerAPI {
      * @param encryptedFile    encrypted file to send
      */
     public void sendFileToUser(String usernameUserFrom, String usernameUserTo, byte[] encryptedFile) {
-        // TODO:
+        producer.sendFile(usernameUserFrom + ".any." + usernameUserTo, encryptedFile);
+        logger.info("[" + usernameUserFrom + "] Sent message to [" + usernameUserTo + "]: " +
+                new String(encryptedFile, 0, min(encryptedFile.length, MAX_LEN_FILE_CONTENT_TO_LOG)) + "...");
     }
 
     /**
@@ -179,6 +185,8 @@ public class MessageBrokerAPI {
      * @param encryptedFile    encrypted file to send
      */
     public void sendFileToGroup(String usernameUserFrom, String groupNameGroupTo, byte[] encryptedFile) {
-        // TODO:
+        producer.sendFile(usernameUserFrom + "." + groupNameGroupTo + ".any", encryptedFile);
+        logger.info("[" + usernameUserFrom + "] Sent file to group [" + groupNameGroupTo + "]: " +
+                new String(encryptedFile, 0, min(encryptedFile.length, MAX_LEN_FILE_CONTENT_TO_LOG)) + "...");
     }
 }
