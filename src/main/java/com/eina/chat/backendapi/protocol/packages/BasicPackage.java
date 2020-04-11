@@ -23,7 +23,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
         @JsonSubTypes.Type(value = CreateRoomCommand.class, name = TypesOfMessage.CREATE_ROOM),
         @JsonSubTypes.Type(value = DeleteAccountCommand.class, name = TypesOfMessage.DELETE_ACCOUNT),
         @JsonSubTypes.Type(value = DeleteRoomCommand.class, name = TypesOfMessage.DELETE_ROOM),
-        @JsonSubTypes.Type(value = DeleteUserFromChatRoom.class, name = TypesOfMessage.DELETE_USER_FROM_CHAT_ROOM),
+        @JsonSubTypes.Type(value = RemoveUserFromChatRoom.class, name = TypesOfMessage.DELETE_USER_FROM_CHAT_ROOM),
         @JsonSubTypes.Type(value = SearchUserCommand.class, name = TypesOfMessage.SEARCH_USER),
         @JsonSubTypes.Type(value = SendFileToRoomCommand.class, name = TypesOfMessage.SEND_FILE_TO_ROOM),
         @JsonSubTypes.Type(value = SendFileToUserCommand.class, name = TypesOfMessage.SEND_FILE_TO_USER),

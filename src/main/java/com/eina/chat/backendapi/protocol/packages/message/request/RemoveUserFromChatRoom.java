@@ -5,16 +5,16 @@ import com.eina.chat.backendapi.protocol.packages.TypesOfMessage;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 
 @JsonTypeName(TypesOfMessage.DELETE_USER_FROM_CHAT_ROOM)
-public class DeleteUserFromChatRoom extends BasicPackage {
+public class RemoveUserFromChatRoom extends BasicPackage {
     private String roomName;
     private String username;
 
     @SuppressWarnings("unused")
-    public DeleteUserFromChatRoom() {
+    public RemoveUserFromChatRoom() {
     }
 
     @SuppressWarnings("unused")
-    public DeleteUserFromChatRoom(int messageId, String roomName, String username) {
+    public RemoveUserFromChatRoom(int messageId, String roomName, String username) {
         super(messageId);
         this.roomName = roomName;
         this.username = username;

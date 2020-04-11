@@ -109,8 +109,8 @@ public class CommandAPIController {
         else if (basicPackage instanceof DeleteRoomCommand)
             return handlerDeleteRoomCommand(principal.getName(), (DeleteRoomCommand) basicPackage);
 
-        else if (basicPackage instanceof DeleteUserFromChatRoom)
-            return handlerDeleteUserFromChatRoom(principal.getName(), (DeleteUserFromChatRoom) basicPackage);
+        else if (basicPackage instanceof RemoveUserFromChatRoom)
+            return handlerDeleteUserFromChatRoom(principal.getName(), (RemoveUserFromChatRoom) basicPackage);
 
 //        else if (basicPackage instanceof SearchUserCommand)
 //            return handlerSearchUserCommand(principal.getName(), (SearchUserCommand) basicPackage);
@@ -197,6 +197,9 @@ public class CommandAPIController {
         for (String group : administeredGroups) {
             messageHistoryDatabaseAPI.deleteMessagesFromGroup(group);
             messageHistoryDatabaseAPI.deleteFilesFromGroup(group);
+
+            // Delete associated broker
+            messageBrokerAPI.deleteGroup(group);
         }
 
         groupsManagementDatabaseAPI.deleteAllGroupsFromAdmin(username);
@@ -246,26 +249,29 @@ public class CommandAPIController {
      * Handle messages received from user with content of type DeleteUserFromChatRoom
      *
      * @param username               user username
-     * @param deleteUserFromChatRoom content
+     * @param removeUserFromChatRoom content
      * @return command response
      */
-    public BasicPackage handlerDeleteUserFromChatRoom(String username, DeleteUserFromChatRoom deleteUserFromChatRoom) {
+    public BasicPackage handlerDeleteUserFromChatRoom(String username, RemoveUserFromChatRoom removeUserFromChatRoom) {
         // TODO: May notify of the deletion
         logger.info("Received message from type DeleteUserFromChatRoom from: " + username);
-        if (deleteUserFromChatRoom.getRoomName() == null || deleteUserFromChatRoom.getUsername() == null)
-            return new OperationFailResponse(deleteUserFromChatRoom.getMessageId(), "Non-existent user or room");
+        if (removeUserFromChatRoom.getRoomName() == null || removeUserFromChatRoom.getUsername() == null)
+            return new OperationFailResponse(removeUserFromChatRoom.getMessageId(), "Non-existent user or room");
 
-        else if (groupsManagementDatabaseAPI.checkIfIsGroupAdmin(deleteUserFromChatRoom.getRoomName(), username))
-            return new OperationFailResponse(deleteUserFromChatRoom.getMessageId(), "You are not the room admin");
+        else if (groupsManagementDatabaseAPI.checkIfIsGroupAdmin(removeUserFromChatRoom.getRoomName(), username))
+            return new OperationFailResponse(removeUserFromChatRoom.getMessageId(), "You are not the room admin");
 
-        else if (groupsManagementDatabaseAPI.checkIfIsGroupMember(deleteUserFromChatRoom.getRoomName(), deleteUserFromChatRoom.getUsername()))
-            return new OperationFailResponse(deleteUserFromChatRoom.getMessageId(), "Non-existent user in the room");
+        else if (groupsManagementDatabaseAPI.checkIfIsGroupMember(removeUserFromChatRoom.getRoomName(), removeUserFromChatRoom.getUsername()))
+            return new OperationFailResponse(removeUserFromChatRoom.getMessageId(), "Non-existent user in the room");
+
+        else if (groupsManagementDatabaseAPI.checkIfIsGroupAdmin(removeUserFromChatRoom.getRoomName(), removeUserFromChatRoom.getUsername()))
+            return new OperationFailResponse(removeUserFromChatRoom.getMessageId(), "You can not remove yourself from the room");
 
         else {
-            groupsManagementDatabaseAPI.removeUserFromGroup(deleteUserFromChatRoom.getRoomName(),
-                    deleteUserFromChatRoom.getUsername());
-            messageBrokerAPI.removeUserFromGroup(deleteUserFromChatRoom.getUsername(), deleteUserFromChatRoom.getRoomName());
-            return new OperationSucceedResponse(deleteUserFromChatRoom.getMessageId());
+            groupsManagementDatabaseAPI.removeUserFromGroup(removeUserFromChatRoom.getRoomName(),
+                    removeUserFromChatRoom.getUsername());
+            messageBrokerAPI.removeUserFromGroup(removeUserFromChatRoom.getUsername(), removeUserFromChatRoom.getRoomName());
+            return new OperationSucceedResponse(removeUserFromChatRoom.getMessageId());
         }
     }
 

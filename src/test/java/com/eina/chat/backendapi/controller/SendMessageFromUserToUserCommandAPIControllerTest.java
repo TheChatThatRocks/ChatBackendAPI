@@ -1,11 +1,14 @@
 package com.eina.chat.backendapi.controller;
 
 import com.eina.chat.backendapi.protocol.packages.*;
+import com.eina.chat.backendapi.protocol.packages.common.response.OperationFailResponse;
 import com.eina.chat.backendapi.protocol.packages.message.request.SendMessageToUserCommand;
 import com.eina.chat.backendapi.protocol.packages.message.response.MessageFromUserResponse;
 import com.eina.chat.backendapi.protocol.packages.common.response.OperationSucceedResponse;
 import com.eina.chat.backendapi.security.AccessLevels;
+import com.eina.chat.backendapi.service.GroupsManagementDatabaseAPI;
 import com.eina.chat.backendapi.service.MessageBrokerAPI;
+import com.eina.chat.backendapi.service.MessageHistoryDatabaseAPI;
 import com.eina.chat.backendapi.service.UserAccountDatabaseAPI;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,6 +26,7 @@ import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.messaging.WebSocketStompClient;
 
 import java.lang.reflect.Type;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -32,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-public class CommandAPIControllerTest {
+public class SendMessageFromUserToUserCommandAPIControllerTest {
     @LocalServerPort
     private int port;
 
@@ -43,11 +47,17 @@ public class CommandAPIControllerTest {
     private String backEndURI;
 
     // Logger
-    private static final Logger LOG = LoggerFactory.getLogger(CommandAPIControllerTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SendMessageFromUserToUserCommandAPIControllerTest.class);
 
     // User database service
     @Autowired
     private UserAccountDatabaseAPI userAccountDatabaseAPI;
+
+    @Autowired
+    private GroupsManagementDatabaseAPI groupsManagementDatabaseAPI;
+
+    @Autowired
+    private MessageHistoryDatabaseAPI messageHistoryDatabaseAPI;
 
     // RabbitMQ API
     @Autowired
@@ -63,9 +73,31 @@ public class CommandAPIControllerTest {
 
     @BeforeEach
     public void setupForEach() {
-        // Delete users from database
+        // Delete users from all databases
         userAccountDatabaseAPI.deleteUser(nameUser1);
         userAccountDatabaseAPI.deleteUser(nameUser2);
+
+        // Delete groups where are admin
+        List<String> groupsWereAdminUser1 = groupsManagementDatabaseAPI.getAllGroupsWhereIsAdmin(nameUser1);
+        for (String i : groupsWereAdminUser1){
+            messageHistoryDatabaseAPI.deleteFilesFromGroup(i);
+            messageHistoryDatabaseAPI.deleteMessagesFromGroup(i);
+            messageBrokerAPI.deleteGroup(i);
+        }
+
+        List<String> groupsWereAdminUser2 = groupsManagementDatabaseAPI.getAllGroupsWhereIsAdmin(nameUser1);
+        for (String i : groupsWereAdminUser2){
+            messageHistoryDatabaseAPI.deleteFilesFromGroup(i);
+            messageHistoryDatabaseAPI.deleteMessagesFromGroup(i);
+            messageBrokerAPI.deleteGroup(i);
+        }
+
+        groupsManagementDatabaseAPI.deleteAllGroupsFromAdmin(nameUser1);
+        groupsManagementDatabaseAPI.deleteAllGroupsFromAdmin(nameUser2);
+
+        // Remove group membership
+        groupsManagementDatabaseAPI.removeUserFromAllGroups(nameUser1);
+        groupsManagementDatabaseAPI.removeUserFromAllGroups(nameUser2);
 
         // Delete users from broker
         messageBrokerAPI.deleteUser(nameUser1);
@@ -80,17 +112,22 @@ public class CommandAPIControllerTest {
         messageBrokerAPI.createUser(nameUser2);
     }
 
+    @BeforeEach
+    public void cleanForEach() {
+        // Delete users from all databases
+        userAccountDatabaseAPI.deleteUser(nameUser1);
+        userAccountDatabaseAPI.deleteUser(nameUser2);
+
+        // Delete users from broker
+        messageBrokerAPI.deleteUser(nameUser1);
+        messageBrokerAPI.deleteUser(nameUser2);
+    }
+
+
     @Test
     public void sendMessageFromUserToUserBoothOnline() throws Exception {
         // Handle exceptions in threads
         final AtomicReference<Throwable> failure = new AtomicReference<>();
-
-        // Variables
-        String nameUser1 = "testUser1";
-        String nameUser2 = "testUser2";
-
-        String passUser1 = "test";
-        String passUser2 = "test";
 
         WebSocketHttpHeaders headersUser1 = new WebSocketHttpHeaders();
         WebSocketHttpHeaders headersUser2 = new WebSocketHttpHeaders();
@@ -176,6 +213,10 @@ public class CommandAPIControllerTest {
                 BasicPackage errorResponse = (BasicPackage) payload;
                 if (errorResponse.getMessageId() == sendMessageID && errorResponse instanceof OperationSucceedResponse)
                     messagesToReceive.countDown();
+
+                else if(errorResponse.getMessageId() == sendMessageID && errorResponse instanceof OperationFailResponse)
+                    failure.set(new Exception(((OperationFailResponse) errorResponse).getDescription()));
+
                 else
                     failure.set(new Exception("Message with bad content in User1 errors"));
             }
