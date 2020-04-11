@@ -66,7 +66,6 @@ public class MessageBrokerAPI {
      */
     public void deleteGroup(@NonNull String groupName) {
         // TODO:
-        userGroups.remove(groupName);
     }
 
     /**
