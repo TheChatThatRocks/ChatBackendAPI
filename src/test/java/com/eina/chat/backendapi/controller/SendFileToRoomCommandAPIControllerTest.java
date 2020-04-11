@@ -1,15 +1,16 @@
 package com.eina.chat.backendapi.controller;
 
-import com.eina.chat.backendapi.protocol.packages.*;
+import com.eina.chat.backendapi.protocol.packages.BasicPackage;
 import com.eina.chat.backendapi.protocol.packages.common.response.OperationFailResponse;
-import com.eina.chat.backendapi.protocol.packages.message.request.SendMessageToUserCommand;
-import com.eina.chat.backendapi.protocol.packages.message.response.MessageFromUserResponse;
 import com.eina.chat.backendapi.protocol.packages.common.response.OperationSucceedResponse;
+import com.eina.chat.backendapi.protocol.packages.message.request.SendFileToRoomCommand;
+import com.eina.chat.backendapi.protocol.packages.message.response.FileFromRoomResponse;
 import com.eina.chat.backendapi.security.AccessLevels;
 import com.eina.chat.backendapi.service.GroupsManagementDatabaseAPI;
 import com.eina.chat.backendapi.service.MessageBrokerAPI;
 import com.eina.chat.backendapi.service.MessageHistoryDatabaseAPI;
 import com.eina.chat.backendapi.service.UserAccountDatabaseAPI;
+import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -20,12 +21,16 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.web.server.LocalServerPort;
 import org.springframework.messaging.converter.MappingJackson2MessageConverter;
-import org.springframework.messaging.simp.stomp.*;
+import org.springframework.messaging.simp.stomp.StompFrameHandler;
+import org.springframework.messaging.simp.stomp.StompHeaders;
+import org.springframework.messaging.simp.stomp.StompSession;
+import org.springframework.messaging.simp.stomp.StompSessionHandlerAdapter;
 import org.springframework.web.socket.WebSocketHttpHeaders;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.messaging.WebSocketStompClient;
 
 import java.lang.reflect.Type;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -36,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-public class SendMessageFromUserToUserCommandAPIControllerTest {
+public class SendFileToRoomCommandAPIControllerTest {
     @LocalServerPort
     private int port;
 
@@ -47,7 +52,7 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
     private String backEndURI;
 
     // Logger
-    private static final Logger LOG = LoggerFactory.getLogger(SendMessageFromUserToUserCommandAPIControllerTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SendFileToRoomCommandAPIControllerTest.class);
 
     // User database service
     @Autowired
@@ -71,8 +76,10 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
     final private String passUser2 = "test";
 
     final private int sendMessageID = 4;
-    final private String sendMessageContent = "testMessage";
+    final private int sizeOfFileToSend = 100;
+    final private byte[] sendFileContent = RandomUtils.nextBytes(sizeOfFileToSend);
 
+    final private String roomName = "testroom";
 
     @BeforeEach
     public void setupForEach() {
@@ -82,14 +89,14 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
 
         // Delete groups where are admin
         List<String> groupsWereAdminUser1 = groupsManagementDatabaseAPI.getAllGroupsWhereIsAdmin(nameUser1);
-        for (String i : groupsWereAdminUser1){
+        for (String i : groupsWereAdminUser1) {
             messageHistoryDatabaseAPI.deleteFilesFromGroup(i);
             messageHistoryDatabaseAPI.deleteMessagesFromGroup(i);
             messageBrokerAPI.deleteGroup(i);
         }
 
         List<String> groupsWereAdminUser2 = groupsManagementDatabaseAPI.getAllGroupsWhereIsAdmin(nameUser1);
-        for (String i : groupsWereAdminUser2){
+        for (String i : groupsWereAdminUser2) {
             messageHistoryDatabaseAPI.deleteFilesFromGroup(i);
             messageHistoryDatabaseAPI.deleteMessagesFromGroup(i);
             messageBrokerAPI.deleteGroup(i);
@@ -113,6 +120,14 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
         // Create users in broker
         messageBrokerAPI.createUser(nameUser1);
         messageBrokerAPI.createUser(nameUser2);
+
+        // Create room
+        groupsManagementDatabaseAPI.createGroup(nameUser1, roomName);
+        messageBrokerAPI.addUserToGroup(nameUser1, roomName);
+
+        // Add user to room
+        groupsManagementDatabaseAPI.addUserToGroup(nameUser2, roomName);
+        messageBrokerAPI.addUserToGroup(nameUser2, roomName);
     }
 
     @BeforeEach
@@ -124,11 +139,14 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
         // Delete users from broker
         messageBrokerAPI.deleteUser(nameUser1);
         messageBrokerAPI.deleteUser(nameUser2);
+
+        // Delete created room
+        groupsManagementDatabaseAPI.deleteGroup(roomName);
+        messageBrokerAPI.deleteGroup(roomName);
     }
 
-
     @Test
-    public void sendMessageFromUserToUserBoothOnline() throws Exception {
+    public void sendFileFromUserToUserBoothOnline() throws Exception {
         // Handle exceptions in threads
         final AtomicReference<Throwable> failure = new AtomicReference<>();
 
@@ -180,7 +198,6 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
 
         });
 
-
         sessionUser2.subscribe("/user/queue/message", new StompFrameHandler() {
             @Override
             public Type getPayloadType(StompHeaders headers) {
@@ -191,9 +208,10 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
             public void handleFrame(StompHeaders headers, Object payload) {
                 LOG.info("Message arrived: /user/queue/message User 2");
 
-                if (payload instanceof MessageFromUserResponse &&
-                        ((MessageFromUserResponse) payload).getMessage().equals(sendMessageContent) &&
-                        ((MessageFromUserResponse) payload).getFrom().equals(nameUser1)) {
+                if (payload instanceof FileFromRoomResponse &&
+                        Arrays.equals(((FileFromRoomResponse) payload).getFile(), sendFileContent) &&
+                        ((FileFromRoomResponse) payload).getFromUser().equals(nameUser1) &&
+                        ((FileFromRoomResponse) payload).getFromRoom().equals(roomName)) {
                     messagesToReceive.countDown();
                 } else {
                     failure.set(new Exception("Message with bad content in User2"));
@@ -215,7 +233,7 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
                 if (errorResponse.getMessageId() == sendMessageID && errorResponse instanceof OperationSucceedResponse)
                     messagesToReceive.countDown();
 
-                else if(errorResponse.getMessageId() == sendMessageID && errorResponse instanceof OperationFailResponse)
+                else if (errorResponse.getMessageId() == sendMessageID && errorResponse instanceof OperationFailResponse)
                     failure.set(new Exception(((OperationFailResponse) errorResponse).getDescription()));
 
                 else
@@ -241,7 +259,7 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
         // Allow subscriptions to set up
         Thread.sleep(1000);
 
-        sessionUser1.send("/app/message", new SendMessageToUserCommand(sendMessageID, nameUser2, sendMessageContent));
+        sessionUser1.send("/app/message", new SendFileToRoomCommand(sendMessageID, roomName, sendFileContent));
 
         boolean hasReceivedMessage = messagesToReceive.await(5, TimeUnit.SECONDS);
 
@@ -256,7 +274,7 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
     }
 
     @Test
-    public void sendMessageFromUserToUserOneOffline() throws Exception {
+    public void sendFileFromUserToUserOneOffline() throws Exception {
         // Handle exceptions in threads
         final AtomicReference<Throwable> failureUser1 = new AtomicReference<>();
         final AtomicReference<Throwable> failureUser2 = new AtomicReference<>();
@@ -327,7 +345,7 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
         // Allow subscriptions to set up
         Thread.sleep(1000);
 
-        sessionUser1.send("/app/message", new SendMessageToUserCommand(sendMessageID, nameUser2, sendMessageContent));
+        sessionUser1.send("/app/message", new SendFileToRoomCommand(sendMessageID, roomName, sendFileContent));
 
         // Check if User1 received ACK
         boolean hasReceivedMessageUser1 = messagesToReceiveUser1.await(5, TimeUnit.SECONDS);
@@ -358,9 +376,10 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
             public void handleFrame(StompHeaders headers, Object payload) {
                 LOG.info("Message arrived: /user/queue/message User 2");
 
-                if (payload instanceof MessageFromUserResponse &&
-                        ((MessageFromUserResponse) payload).getMessage().equals(sendMessageContent) &&
-                        ((MessageFromUserResponse) payload).getFrom().equals(nameUser1)) {
+                if (payload instanceof FileFromRoomResponse &&
+                        Arrays.equals(((FileFromRoomResponse) payload).getFile(), sendFileContent) &&
+                        ((FileFromRoomResponse) payload).getFromUser().equals(nameUser1) &&
+                        ((FileFromRoomResponse) payload).getFromRoom().equals(roomName)) {
                     messagesToReceiveUser2.countDown();
                 } else {
                     failureUser2.set(new Exception("Message with bad content in User2"));

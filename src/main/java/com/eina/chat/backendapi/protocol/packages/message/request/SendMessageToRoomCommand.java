@@ -4,7 +4,7 @@ import com.eina.chat.backendapi.protocol.packages.BasicPackage;
 import com.eina.chat.backendapi.protocol.packages.TypesOfMessage;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 
-@JsonTypeName(TypesOfMessage.SEND_MESSAGE_TO_USER)
+@JsonTypeName(TypesOfMessage.SEND_MESSAGE_TO_ROOM)
 public class SendMessageToRoomCommand extends BasicPackage {
     private String roomName;
     private String message;

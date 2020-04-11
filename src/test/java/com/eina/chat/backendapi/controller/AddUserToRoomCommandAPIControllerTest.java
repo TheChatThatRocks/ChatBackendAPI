@@ -4,7 +4,6 @@ import com.eina.chat.backendapi.protocol.packages.BasicPackage;
 import com.eina.chat.backendapi.protocol.packages.common.response.OperationFailResponse;
 import com.eina.chat.backendapi.protocol.packages.common.response.OperationSucceedResponse;
 import com.eina.chat.backendapi.protocol.packages.message.request.AddUserToChatRoomCommand;
-import com.eina.chat.backendapi.protocol.packages.message.request.CreateRoomCommand;
 import com.eina.chat.backendapi.security.AccessLevels;
 import com.eina.chat.backendapi.service.GroupsManagementDatabaseAPI;
 import com.eina.chat.backendapi.service.MessageBrokerAPI;
@@ -121,7 +120,7 @@ public class AddUserToRoomCommandAPIControllerTest {
         messageBrokerAPI.deleteGroup(roomName);
 
         // Create room
-        groupsManagementDatabaseAPI.createGroup(roomName, nameAdminUser);
+        groupsManagementDatabaseAPI.createGroup(nameAdminUser, roomName);
         messageBrokerAPI.addUserToGroup(nameAdminUser,roomName);
     }
 
@@ -206,7 +205,7 @@ public class AddUserToRoomCommandAPIControllerTest {
         // Allow subscriptions to set up
         Thread.sleep(1000);
 
-        sessionUser1.send("/app/message", new AddUserToChatRoomCommand(sendMessageID, roomName, nameMemberUser));
+        sessionUser1.send("/app/message", new AddUserToChatRoomCommand(sendMessageID, nameMemberUser, roomName));
 
         boolean hasReceivedMessage = messagesToReceive.await(5, TimeUnit.SECONDS);
 
@@ -219,6 +218,6 @@ public class AddUserToRoomCommandAPIControllerTest {
         }
 
         // Check if user have added to room
-        assert (groupsManagementDatabaseAPI.checkIfIsGroupMember(roomName, nameMemberUser));
+        assert (groupsManagementDatabaseAPI.checkIfIsGroupMember(nameMemberUser, roomName));
     }
 }

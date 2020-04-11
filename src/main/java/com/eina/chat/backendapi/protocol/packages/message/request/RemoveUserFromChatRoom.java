@@ -14,7 +14,7 @@ public class RemoveUserFromChatRoom extends BasicPackage {
     }
 
     @SuppressWarnings("unused")
-    public RemoveUserFromChatRoom(int messageId, String roomName, String username) {
+    public RemoveUserFromChatRoom(int messageId, String username, String roomName) {
         super(messageId);
         this.roomName = roomName;
         this.username = username;

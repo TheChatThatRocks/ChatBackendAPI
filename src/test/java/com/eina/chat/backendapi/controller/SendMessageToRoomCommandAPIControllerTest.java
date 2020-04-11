@@ -1,10 +1,10 @@
 package com.eina.chat.backendapi.controller;
 
-import com.eina.chat.backendapi.protocol.packages.*;
+import com.eina.chat.backendapi.protocol.packages.BasicPackage;
 import com.eina.chat.backendapi.protocol.packages.common.response.OperationFailResponse;
-import com.eina.chat.backendapi.protocol.packages.message.request.SendMessageToUserCommand;
-import com.eina.chat.backendapi.protocol.packages.message.response.MessageFromUserResponse;
 import com.eina.chat.backendapi.protocol.packages.common.response.OperationSucceedResponse;
+import com.eina.chat.backendapi.protocol.packages.message.request.SendMessageToRoomCommand;
+import com.eina.chat.backendapi.protocol.packages.message.response.MessageFromRoomResponse;
 import com.eina.chat.backendapi.security.AccessLevels;
 import com.eina.chat.backendapi.service.GroupsManagementDatabaseAPI;
 import com.eina.chat.backendapi.service.MessageBrokerAPI;
@@ -20,7 +20,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.web.server.LocalServerPort;
 import org.springframework.messaging.converter.MappingJackson2MessageConverter;
-import org.springframework.messaging.simp.stomp.*;
+import org.springframework.messaging.simp.stomp.StompFrameHandler;
+import org.springframework.messaging.simp.stomp.StompHeaders;
+import org.springframework.messaging.simp.stomp.StompSession;
+import org.springframework.messaging.simp.stomp.StompSessionHandlerAdapter;
 import org.springframework.web.socket.WebSocketHttpHeaders;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.messaging.WebSocketStompClient;
@@ -36,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-public class SendMessageFromUserToUserCommandAPIControllerTest {
+public class SendMessageToRoomCommandAPIControllerTest {
     @LocalServerPort
     private int port;
 
@@ -47,7 +50,7 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
     private String backEndURI;
 
     // Logger
-    private static final Logger LOG = LoggerFactory.getLogger(SendMessageFromUserToUserCommandAPIControllerTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SendMessageToRoomCommandAPIControllerTest.class);
 
     // User database service
     @Autowired
@@ -73,6 +76,8 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
     final private int sendMessageID = 4;
     final private String sendMessageContent = "testMessage";
 
+    final private String roomName = "testroom";
+
 
     @BeforeEach
     public void setupForEach() {
@@ -82,14 +87,14 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
 
         // Delete groups where are admin
         List<String> groupsWereAdminUser1 = groupsManagementDatabaseAPI.getAllGroupsWhereIsAdmin(nameUser1);
-        for (String i : groupsWereAdminUser1){
+        for (String i : groupsWereAdminUser1) {
             messageHistoryDatabaseAPI.deleteFilesFromGroup(i);
             messageHistoryDatabaseAPI.deleteMessagesFromGroup(i);
             messageBrokerAPI.deleteGroup(i);
         }
 
         List<String> groupsWereAdminUser2 = groupsManagementDatabaseAPI.getAllGroupsWhereIsAdmin(nameUser1);
-        for (String i : groupsWereAdminUser2){
+        for (String i : groupsWereAdminUser2) {
             messageHistoryDatabaseAPI.deleteFilesFromGroup(i);
             messageHistoryDatabaseAPI.deleteMessagesFromGroup(i);
             messageBrokerAPI.deleteGroup(i);
@@ -113,6 +118,14 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
         // Create users in broker
         messageBrokerAPI.createUser(nameUser1);
         messageBrokerAPI.createUser(nameUser2);
+
+        // Create room
+        groupsManagementDatabaseAPI.createGroup(nameUser1, roomName);
+        messageBrokerAPI.addUserToGroup(nameUser1, roomName);
+
+        // Add user to room
+        groupsManagementDatabaseAPI.addUserToGroup(nameUser2, roomName);
+        messageBrokerAPI.addUserToGroup(nameUser2, roomName);
     }
 
     @BeforeEach
@@ -124,11 +137,15 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
         // Delete users from broker
         messageBrokerAPI.deleteUser(nameUser1);
         messageBrokerAPI.deleteUser(nameUser2);
+
+        // Delete created room
+        groupsManagementDatabaseAPI.deleteGroup(roomName);
+        messageBrokerAPI.deleteGroup(roomName);
     }
 
 
     @Test
-    public void sendMessageFromUserToUserBoothOnline() throws Exception {
+    public void sendMessageFromToRoomBoothOnline() throws Exception {
         // Handle exceptions in threads
         final AtomicReference<Throwable> failure = new AtomicReference<>();
 
@@ -177,7 +194,6 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
 
                 failure.set(new Exception("Message arrived to User1"));
             }
-
         });
 
 
@@ -191,9 +207,10 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
             public void handleFrame(StompHeaders headers, Object payload) {
                 LOG.info("Message arrived: /user/queue/message User 2");
 
-                if (payload instanceof MessageFromUserResponse &&
-                        ((MessageFromUserResponse) payload).getMessage().equals(sendMessageContent) &&
-                        ((MessageFromUserResponse) payload).getFrom().equals(nameUser1)) {
+                if (payload instanceof MessageFromRoomResponse &&
+                        ((MessageFromRoomResponse) payload).getMessage().equals(sendMessageContent) &&
+                        ((MessageFromRoomResponse) payload).getFromUser().equals(nameUser1) &&
+                        ((MessageFromRoomResponse) payload).getFromRoom().equals(roomName)) {
                     messagesToReceive.countDown();
                 } else {
                     failure.set(new Exception("Message with bad content in User2"));
@@ -215,7 +232,7 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
                 if (errorResponse.getMessageId() == sendMessageID && errorResponse instanceof OperationSucceedResponse)
                     messagesToReceive.countDown();
 
-                else if(errorResponse.getMessageId() == sendMessageID && errorResponse instanceof OperationFailResponse)
+                else if (errorResponse.getMessageId() == sendMessageID && errorResponse instanceof OperationFailResponse)
                     failure.set(new Exception(((OperationFailResponse) errorResponse).getDescription()));
 
                 else
@@ -241,7 +258,7 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
         // Allow subscriptions to set up
         Thread.sleep(1000);
 
-        sessionUser1.send("/app/message", new SendMessageToUserCommand(sendMessageID, nameUser2, sendMessageContent));
+        sessionUser1.send("/app/message", new SendMessageToRoomCommand(sendMessageID, roomName, sendMessageContent));
 
         boolean hasReceivedMessage = messagesToReceive.await(5, TimeUnit.SECONDS);
 
@@ -256,7 +273,7 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
     }
 
     @Test
-    public void sendMessageFromUserToUserOneOffline() throws Exception {
+    public void sendMessageToRoomOneOffline() throws Exception {
         // Handle exceptions in threads
         final AtomicReference<Throwable> failureUser1 = new AtomicReference<>();
         final AtomicReference<Throwable> failureUser2 = new AtomicReference<>();
@@ -327,7 +344,7 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
         // Allow subscriptions to set up
         Thread.sleep(1000);
 
-        sessionUser1.send("/app/message", new SendMessageToUserCommand(sendMessageID, nameUser2, sendMessageContent));
+        sessionUser1.send("/app/message", new SendMessageToRoomCommand(sendMessageID, roomName, sendMessageContent));
 
         // Check if User1 received ACK
         boolean hasReceivedMessageUser1 = messagesToReceiveUser1.await(5, TimeUnit.SECONDS);
@@ -358,9 +375,10 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
             public void handleFrame(StompHeaders headers, Object payload) {
                 LOG.info("Message arrived: /user/queue/message User 2");
 
-                if (payload instanceof MessageFromUserResponse &&
-                        ((MessageFromUserResponse) payload).getMessage().equals(sendMessageContent) &&
-                        ((MessageFromUserResponse) payload).getFrom().equals(nameUser1)) {
+                if (payload instanceof MessageFromRoomResponse &&
+                        ((MessageFromRoomResponse) payload).getMessage().equals(sendMessageContent) &&
+                        ((MessageFromRoomResponse) payload).getFromUser().equals(nameUser1) &&
+                        ((MessageFromRoomResponse) payload).getFromRoom().equals(roomName)) {
                     messagesToReceiveUser2.countDown();
                 } else {
                     failureUser2.set(new Exception("Message with bad content in User2"));

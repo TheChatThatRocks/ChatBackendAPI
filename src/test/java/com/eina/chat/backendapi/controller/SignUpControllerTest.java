@@ -5,7 +5,9 @@ import com.eina.chat.backendapi.protocol.packages.common.response.OperationFailR
 import com.eina.chat.backendapi.protocol.packages.common.response.OperationSucceedResponse;
 import com.eina.chat.backendapi.protocol.packages.signup.request.AddAccountCommand;
 import com.eina.chat.backendapi.security.AccessLevels;
+import com.eina.chat.backendapi.service.GroupsManagementDatabaseAPI;
 import com.eina.chat.backendapi.service.MessageBrokerAPI;
+import com.eina.chat.backendapi.service.MessageHistoryDatabaseAPI;
 import com.eina.chat.backendapi.service.UserAccountDatabaseAPI;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +21,7 @@ import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.messaging.WebSocketStompClient;
 
 import java.lang.reflect.Type;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -42,6 +45,12 @@ public class SignUpControllerTest {
     @Autowired
     private UserAccountDatabaseAPI userAccountDatabaseAPI;
 
+    @Autowired
+    private GroupsManagementDatabaseAPI groupsManagementDatabaseAPI;
+
+    @Autowired
+    private MessageHistoryDatabaseAPI messageHistoryDatabaseAPI;
+
     // RabbitMQ API
     @Autowired
     private MessageBrokerAPI messageBrokerAPI;
@@ -52,18 +61,33 @@ public class SignUpControllerTest {
 
     @BeforeEach
     public void setupForEach() {
-        if (userAccountDatabaseAPI.checkUserExist(username)) {
-            userAccountDatabaseAPI.deleteUser(username);
-            messageBrokerAPI.deleteUser(username);
+        // Delete users from all databases
+        userAccountDatabaseAPI.deleteUser(username);
+
+        // Delete groups where are admin
+        List<String> groupsWereAdminUser1 = groupsManagementDatabaseAPI.getAllGroupsWhereIsAdmin(username);
+        for (String i : groupsWereAdminUser1){
+            messageHistoryDatabaseAPI.deleteFilesFromGroup(i);
+            messageHistoryDatabaseAPI.deleteMessagesFromGroup(i);
+            messageBrokerAPI.deleteGroup(i);
         }
+
+        groupsManagementDatabaseAPI.deleteAllGroupsFromAdmin(username);
+
+        // Remove group membership
+        groupsManagementDatabaseAPI.removeUserFromAllGroups(username);
+
+        // Delete users from broker
+        messageBrokerAPI.deleteUser(username);
     }
 
-    @AfterEach
-    public void deleteForEach() {
-        if (userAccountDatabaseAPI.checkUserExist(username)) {
-            userAccountDatabaseAPI.deleteUser(username);
-            messageBrokerAPI.deleteUser(username);
-        }
+    @BeforeEach
+    public void cleanForEach() {
+        // Delete users from all databases
+        userAccountDatabaseAPI.deleteUser(username);
+
+        // Delete users from broker
+        messageBrokerAPI.deleteUser(username);
     }
 
     /**

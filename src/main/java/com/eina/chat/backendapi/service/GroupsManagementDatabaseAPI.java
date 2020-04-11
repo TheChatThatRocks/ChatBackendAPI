@@ -10,11 +10,10 @@ import java.util.List;
 public class GroupsManagementDatabaseAPI {
     /**
      * Create group if doesn't exist yet
-     *
-     * @param adminUsername admin username
+     *  @param adminUsername admin username
      * @param groupName     group name
      */
-    public void createGroup(@NonNull String groupName, @NonNull String adminUsername) {
+    public void createGroup(@NonNull String adminUsername, @NonNull String groupName) {
         // TODO:
     }
 
@@ -30,20 +29,20 @@ public class GroupsManagementDatabaseAPI {
     /**
      * Add user to group
      *
-     * @param groupName group name
      * @param username  user username
+     * @param groupName group name
      */
-    public void addUserToGroup(@NonNull String groupName, @NonNull String username) {
+    public void addUserToGroup(@NonNull String username, @NonNull String groupName) {
         // TODO:
     }
 
     /**
      * Remove user from group
      *
-     * @param groupName group name
      * @param username  user username
+     * @param groupName group name
      */
-    public void removeUserFromGroup(@NonNull String groupName, @NonNull String username) {
+    public void removeUserFromGroup(@NonNull String username, @NonNull String groupName) {
         // TODO:
     }
 
@@ -72,11 +71,11 @@ public class GroupsManagementDatabaseAPI {
     /**
      * Check if user is admin of the group
      *
-     * @param groupName group name
      * @param username  user username
+     * @param groupName group name
      * @return true if user is admin of the group
      */
-    public boolean checkIfIsGroupAdmin(@NonNull String groupName, @NonNull String username) {
+    public boolean checkIfIsGroupAdmin(@NonNull String username, @NonNull String groupName) {
         // TODO:
         return true;
     }
@@ -84,11 +83,11 @@ public class GroupsManagementDatabaseAPI {
     /**
      * Check is user is member of the group
      *
-     * @param groupName group name
      * @param username  user username
+     * @param groupName group name
      * @return true if is group member
      */
-    public boolean checkIfIsGroupMember(@NonNull String groupName, @NonNull String username) {
+    public boolean checkIfIsGroupMember(@NonNull String username, @NonNull String groupName) {
         // TODO:
         return true;
     }

@@ -3,7 +3,6 @@ package com.eina.chat.backendapi.controller;
 import com.eina.chat.backendapi.protocol.packages.BasicPackage;
 import com.eina.chat.backendapi.protocol.packages.common.response.OperationFailResponse;
 import com.eina.chat.backendapi.protocol.packages.common.response.OperationSucceedResponse;
-import com.eina.chat.backendapi.protocol.packages.message.request.CreateRoomCommand;
 import com.eina.chat.backendapi.protocol.packages.message.request.DeleteRoomCommand;
 import com.eina.chat.backendapi.security.AccessLevels;
 import com.eina.chat.backendapi.service.GroupsManagementDatabaseAPI;
@@ -105,7 +104,7 @@ public class DeleteChatRoomCommandAPIControllerTest {
         messageBrokerAPI.deleteGroup(roomName);
 
         // Create room
-        groupsManagementDatabaseAPI.createGroup(roomName, nameAdminUser);
+        groupsManagementDatabaseAPI.createGroup(nameAdminUser, roomName);
         messageBrokerAPI.addUserToGroup(nameAdminUser,roomName);
     }
 

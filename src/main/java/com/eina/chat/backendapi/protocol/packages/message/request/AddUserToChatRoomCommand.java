@@ -14,7 +14,7 @@ public class AddUserToChatRoomCommand extends BasicPackage {
     }
 
     @SuppressWarnings("unused")
-    public AddUserToChatRoomCommand(int messageId, String roomName, String username) {
+    public AddUserToChatRoomCommand(int messageId, String username, String roomName) {
         super(messageId);
         this.roomName = roomName;
         this.username = username;

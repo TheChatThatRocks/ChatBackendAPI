@@ -4,8 +4,6 @@ import com.eina.chat.backendapi.protocol.packages.BasicPackage;
 import com.eina.chat.backendapi.protocol.packages.common.response.OperationFailResponse;
 import com.eina.chat.backendapi.protocol.packages.common.response.OperationSucceedResponse;
 import com.eina.chat.backendapi.protocol.packages.message.request.CreateRoomCommand;
-import com.eina.chat.backendapi.protocol.packages.message.request.SendMessageToUserCommand;
-import com.eina.chat.backendapi.protocol.packages.message.response.MessageFromUserResponse;
 import com.eina.chat.backendapi.security.AccessLevels;
 import com.eina.chat.backendapi.service.GroupsManagementDatabaseAPI;
 import com.eina.chat.backendapi.service.MessageBrokerAPI;
@@ -198,6 +196,6 @@ public class CreateChatRoomCommandAPIControllerTest {
         }
 
         // Check if room have been created
-        assert (groupsManagementDatabaseAPI.checkIfIsGroupAdmin(roomName, nameAdminUser));
+        assert (groupsManagementDatabaseAPI.checkIfIsGroupAdmin(nameAdminUser, roomName));
     }
 }

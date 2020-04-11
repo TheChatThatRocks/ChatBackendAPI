@@ -1,15 +1,18 @@
 package com.eina.chat.backendapi.controller;
 
-import com.eina.chat.backendapi.protocol.packages.*;
+import com.eina.chat.backendapi.protocol.packages.BasicPackage;
 import com.eina.chat.backendapi.protocol.packages.common.response.OperationFailResponse;
-import com.eina.chat.backendapi.protocol.packages.message.request.SendMessageToUserCommand;
-import com.eina.chat.backendapi.protocol.packages.message.response.MessageFromUserResponse;
 import com.eina.chat.backendapi.protocol.packages.common.response.OperationSucceedResponse;
+import com.eina.chat.backendapi.protocol.packages.message.request.SendFileToUserCommand;
+import com.eina.chat.backendapi.protocol.packages.message.request.SendMessageToUserCommand;
+import com.eina.chat.backendapi.protocol.packages.message.response.FileFromUserResponse;
+import com.eina.chat.backendapi.protocol.packages.message.response.MessageFromUserResponse;
 import com.eina.chat.backendapi.security.AccessLevels;
 import com.eina.chat.backendapi.service.GroupsManagementDatabaseAPI;
 import com.eina.chat.backendapi.service.MessageBrokerAPI;
 import com.eina.chat.backendapi.service.MessageHistoryDatabaseAPI;
 import com.eina.chat.backendapi.service.UserAccountDatabaseAPI;
+import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -20,12 +23,16 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.web.server.LocalServerPort;
 import org.springframework.messaging.converter.MappingJackson2MessageConverter;
-import org.springframework.messaging.simp.stomp.*;
+import org.springframework.messaging.simp.stomp.StompFrameHandler;
+import org.springframework.messaging.simp.stomp.StompHeaders;
+import org.springframework.messaging.simp.stomp.StompSession;
+import org.springframework.messaging.simp.stomp.StompSessionHandlerAdapter;
 import org.springframework.web.socket.WebSocketHttpHeaders;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.messaging.WebSocketStompClient;
 
 import java.lang.reflect.Type;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -36,7 +43,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-public class SendMessageFromUserToUserCommandAPIControllerTest {
+public class SendFileFromUserToUserCommandAPIControllerTest {
     @LocalServerPort
     private int port;
 
@@ -47,7 +54,7 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
     private String backEndURI;
 
     // Logger
-    private static final Logger LOG = LoggerFactory.getLogger(SendMessageFromUserToUserCommandAPIControllerTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SendFileFromUserToUserCommandAPIControllerTest.class);
 
     // User database service
     @Autowired
@@ -71,7 +78,8 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
     final private String passUser2 = "test";
 
     final private int sendMessageID = 4;
-    final private String sendMessageContent = "testMessage";
+    final private int sizeOfFileToSend = 100;
+    final private byte[] sendFileContent = RandomUtils.nextBytes(sizeOfFileToSend);
 
 
     @BeforeEach
@@ -126,9 +134,8 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
         messageBrokerAPI.deleteUser(nameUser2);
     }
 
-
     @Test
-    public void sendMessageFromUserToUserBoothOnline() throws Exception {
+    public void sendFileFromUserToUserBoothOnline() throws Exception {
         // Handle exceptions in threads
         final AtomicReference<Throwable> failure = new AtomicReference<>();
 
@@ -180,7 +187,6 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
 
         });
 
-
         sessionUser2.subscribe("/user/queue/message", new StompFrameHandler() {
             @Override
             public Type getPayloadType(StompHeaders headers) {
@@ -191,9 +197,9 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
             public void handleFrame(StompHeaders headers, Object payload) {
                 LOG.info("Message arrived: /user/queue/message User 2");
 
-                if (payload instanceof MessageFromUserResponse &&
-                        ((MessageFromUserResponse) payload).getMessage().equals(sendMessageContent) &&
-                        ((MessageFromUserResponse) payload).getFrom().equals(nameUser1)) {
+                if (payload instanceof FileFromUserResponse &&
+                        Arrays.equals(((FileFromUserResponse) payload).getFile(), sendFileContent) &&
+                        ((FileFromUserResponse) payload).getFrom().equals(nameUser1)) {
                     messagesToReceive.countDown();
                 } else {
                     failure.set(new Exception("Message with bad content in User2"));
@@ -241,7 +247,7 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
         // Allow subscriptions to set up
         Thread.sleep(1000);
 
-        sessionUser1.send("/app/message", new SendMessageToUserCommand(sendMessageID, nameUser2, sendMessageContent));
+        sessionUser1.send("/app/message", new SendFileToUserCommand(sendMessageID, nameUser2, sendFileContent));
 
         boolean hasReceivedMessage = messagesToReceive.await(5, TimeUnit.SECONDS);
 
@@ -256,7 +262,7 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
     }
 
     @Test
-    public void sendMessageFromUserToUserOneOffline() throws Exception {
+    public void sendFileFromUserToUserOneOffline() throws Exception {
         // Handle exceptions in threads
         final AtomicReference<Throwable> failureUser1 = new AtomicReference<>();
         final AtomicReference<Throwable> failureUser2 = new AtomicReference<>();
@@ -327,7 +333,7 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
         // Allow subscriptions to set up
         Thread.sleep(1000);
 
-        sessionUser1.send("/app/message", new SendMessageToUserCommand(sendMessageID, nameUser2, sendMessageContent));
+        sessionUser1.send("/app/message", new SendFileToUserCommand(sendMessageID, nameUser2, sendFileContent));
 
         // Check if User1 received ACK
         boolean hasReceivedMessageUser1 = messagesToReceiveUser1.await(5, TimeUnit.SECONDS);
@@ -358,9 +364,9 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
             public void handleFrame(StompHeaders headers, Object payload) {
                 LOG.info("Message arrived: /user/queue/message User 2");
 
-                if (payload instanceof MessageFromUserResponse &&
-                        ((MessageFromUserResponse) payload).getMessage().equals(sendMessageContent) &&
-                        ((MessageFromUserResponse) payload).getFrom().equals(nameUser1)) {
+                if (payload instanceof FileFromUserResponse &&
+                        Arrays.equals(((FileFromUserResponse) payload).getFile(), sendFileContent) &&
+                        ((FileFromUserResponse) payload).getFrom().equals(nameUser1)) {
                     messagesToReceiveUser2.countDown();
                 } else {
                     failureUser2.set(new Exception("Message with bad content in User2"));

@@ -120,12 +120,12 @@ public class RemoveUserFromRoomCommandAPIControllerTest {
         messageBrokerAPI.deleteGroup(roomName);
 
         // Create room
-        groupsManagementDatabaseAPI.createGroup(roomName, nameAdminUser);
+        groupsManagementDatabaseAPI.createGroup(nameAdminUser, roomName);
         messageBrokerAPI.addUserToGroup(nameAdminUser,roomName);
 
         // Add user to room
-        groupsManagementDatabaseAPI.addUserToGroup(roomName, nameAdminUser);
-        messageBrokerAPI.addUserToGroup(nameAdminUser,nameMemberUser);
+        groupsManagementDatabaseAPI.addUserToGroup(nameMemberUser, roomName);
+        messageBrokerAPI.addUserToGroup(nameMemberUser,roomName);
     }
 
     @BeforeEach
@@ -209,7 +209,7 @@ public class RemoveUserFromRoomCommandAPIControllerTest {
         // Allow subscriptions to set up
         Thread.sleep(1000);
 
-        sessionUser1.send("/app/message", new RemoveUserFromChatRoom(sendMessageID, roomName, nameMemberUser));
+        sessionUser1.send("/app/message", new RemoveUserFromChatRoom(sendMessageID, nameMemberUser, roomName));
 
         boolean hasReceivedMessage = messagesToReceive.await(5, TimeUnit.SECONDS);
 
@@ -222,6 +222,6 @@ public class RemoveUserFromRoomCommandAPIControllerTest {
         }
 
         // Check if user is in the room
-        assert (!groupsManagementDatabaseAPI.checkIfIsGroupMember(roomName, nameMemberUser));
+        assert (!groupsManagementDatabaseAPI.checkIfIsGroupMember(nameMemberUser, roomName));
     }
 }

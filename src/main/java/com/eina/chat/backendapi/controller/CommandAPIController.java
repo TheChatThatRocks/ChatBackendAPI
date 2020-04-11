@@ -112,9 +112,6 @@ public class CommandAPIController {
         else if (basicPackage instanceof RemoveUserFromChatRoom)
             return handlerDeleteUserFromChatRoom(principal.getName(), (RemoveUserFromChatRoom) basicPackage);
 
-//        else if (basicPackage instanceof SearchUserCommand)
-//            return handlerSearchUserCommand(principal.getName(), (SearchUserCommand) basicPackage);
-
         else if (basicPackage instanceof SendFileToRoomCommand)
             return handlerSendFileToRoomCommand(principal.getName(), (SendFileToRoomCommand) basicPackage);
 
@@ -126,9 +123,6 @@ public class CommandAPIController {
 
         else if (basicPackage instanceof SendMessageToUserCommand)
             return handlerSendMessageToUserCommand(principal.getName(), (SendMessageToUserCommand) basicPackage);
-
-        else if (basicPackage instanceof JoinedRoomsChatHistoryCommand)
-            return handlerJoinedRoomsChatHistoryCommand(principal.getName(), (JoinedRoomsChatHistoryCommand) basicPackage);
 
         else return new OperationFailResponse(basicPackage.getMessageId(), "Unknown command");
     }
@@ -146,12 +140,12 @@ public class CommandAPIController {
                 !userAccountDatabaseAPI.checkUserExist(addUserToChatRoomCommand.getUsername()))
             return new OperationFailResponse(addUserToChatRoomCommand.getMessageId(), "Non-existent user or room");
 
-        else if (!groupsManagementDatabaseAPI.checkIfIsGroupAdmin(addUserToChatRoomCommand.getRoomName(), username))
+        else if (!groupsManagementDatabaseAPI.checkIfIsGroupAdmin(username, addUserToChatRoomCommand.getRoomName()))
             return new OperationFailResponse(addUserToChatRoomCommand.getMessageId(), "You are not the room admin");
 
         else {
-            groupsManagementDatabaseAPI.addUserToGroup(addUserToChatRoomCommand.getRoomName(),
-                    addUserToChatRoomCommand.getUsername());
+            groupsManagementDatabaseAPI.addUserToGroup(addUserToChatRoomCommand.getUsername(), addUserToChatRoomCommand.getRoomName()
+            );
             messageBrokerAPI.addUserToGroup(addUserToChatRoomCommand.getUsername(), addUserToChatRoomCommand.getRoomName());
             return new OperationSucceedResponse(addUserToChatRoomCommand.getMessageId());
         }
@@ -175,7 +169,7 @@ public class CommandAPIController {
             return new OperationFailResponse(createRoomCommand.getMessageId(), "The name of the room already exists");
 
         else {
-            groupsManagementDatabaseAPI.createGroup(createRoomCommand.getRoomName(), username);
+            groupsManagementDatabaseAPI.createGroup(username, createRoomCommand.getRoomName());
             messageBrokerAPI.addUserToGroup(username, createRoomCommand.getRoomName());
             return new OperationSucceedResponse(createRoomCommand.getMessageId());
         }
@@ -227,7 +221,7 @@ public class CommandAPIController {
         // TODO: May notify all group member of the deletion
         logger.info("Received message from type DeleteRoomCommand from: " + username);
         if (deleteRoomCommand.getRoomName() == null ||
-                !groupsManagementDatabaseAPI.checkIfIsGroupAdmin(deleteRoomCommand.getRoomName(), username))
+                !groupsManagementDatabaseAPI.checkIfIsGroupAdmin(username, deleteRoomCommand.getRoomName()))
             return new OperationFailResponse(deleteRoomCommand.getMessageId(), "You are not the room admin");
 
         else {
@@ -258,18 +252,18 @@ public class CommandAPIController {
         if (removeUserFromChatRoom.getRoomName() == null || removeUserFromChatRoom.getUsername() == null)
             return new OperationFailResponse(removeUserFromChatRoom.getMessageId(), "Non-existent user or room");
 
-        else if (groupsManagementDatabaseAPI.checkIfIsGroupAdmin(removeUserFromChatRoom.getRoomName(), username))
+        else if (groupsManagementDatabaseAPI.checkIfIsGroupAdmin(username, removeUserFromChatRoom.getRoomName()))
             return new OperationFailResponse(removeUserFromChatRoom.getMessageId(), "You are not the room admin");
 
-        else if (groupsManagementDatabaseAPI.checkIfIsGroupMember(removeUserFromChatRoom.getRoomName(), removeUserFromChatRoom.getUsername()))
+        else if (groupsManagementDatabaseAPI.checkIfIsGroupMember(removeUserFromChatRoom.getUsername(), removeUserFromChatRoom.getRoomName()))
             return new OperationFailResponse(removeUserFromChatRoom.getMessageId(), "Non-existent user in the room");
 
-        else if (groupsManagementDatabaseAPI.checkIfIsGroupAdmin(removeUserFromChatRoom.getRoomName(), removeUserFromChatRoom.getUsername()))
+        else if (groupsManagementDatabaseAPI.checkIfIsGroupAdmin(removeUserFromChatRoom.getUsername(), removeUserFromChatRoom.getRoomName()))
             return new OperationFailResponse(removeUserFromChatRoom.getMessageId(), "You can not remove yourself from the room");
 
         else {
-            groupsManagementDatabaseAPI.removeUserFromGroup(removeUserFromChatRoom.getRoomName(),
-                    removeUserFromChatRoom.getUsername());
+            groupsManagementDatabaseAPI.removeUserFromGroup(removeUserFromChatRoom.getUsername(), removeUserFromChatRoom.getRoomName()
+            );
             messageBrokerAPI.removeUserFromGroup(removeUserFromChatRoom.getUsername(), removeUserFromChatRoom.getRoomName());
             return new OperationSucceedResponse(removeUserFromChatRoom.getMessageId());
         }
@@ -301,7 +295,7 @@ public class CommandAPIController {
         if (sendFileToRoomCommand.getRoomName() == null)
             return new OperationFailResponse(sendFileToRoomCommand.getMessageId(), "Non-existent room");
 
-        else if (!groupsManagementDatabaseAPI.checkIfIsGroupMember(sendFileToRoomCommand.getRoomName(), username))
+        else if (!groupsManagementDatabaseAPI.checkIfIsGroupMember(username, sendFileToRoomCommand.getRoomName()))
             return new OperationFailResponse(sendFileToRoomCommand.getMessageId(), "You are not member of the room");
 
         else if (sendFileToRoomCommand.getFile() == null || sendFileToRoomCommand.getFile().length == 0 ||
@@ -354,7 +348,7 @@ public class CommandAPIController {
         if (sendMessageToRoomCommand.getRoomName() == null)
             return new OperationFailResponse(sendMessageToRoomCommand.getMessageId(), "Non-existent room");
 
-        else if (!groupsManagementDatabaseAPI.checkIfIsGroupMember(sendMessageToRoomCommand.getRoomName(), username))
+        else if (!groupsManagementDatabaseAPI.checkIfIsGroupMember(username, sendMessageToRoomCommand.getRoomName()))
             return new OperationFailResponse(sendMessageToRoomCommand.getMessageId(), "You are not member of the room");
 
         else if (sendMessageToRoomCommand.getMessage() == null || sendMessageToRoomCommand.getMessage().isBlank() ||
@@ -395,20 +389,21 @@ public class CommandAPIController {
         }
     }
 
-    /**
-     * Handle messages received from user with content of type SendMessageToUserCommand
-     *
-     * @param username                      user username
-     * @param joinedRoomsChatHistoryCommand content
-     * @return command response
-     */
-    public BasicPackage handlerJoinedRoomsChatHistoryCommand(String username, JoinedRoomsChatHistoryCommand joinedRoomsChatHistoryCommand) {
-        logger.info("Received message from type JoinedRoomsChatHistoryCommand from: " + username);
-        // TODO:  This call looks unnecessary, wait until client been implemented but divide it in two calls looks more appropriate
-        // getGroupsFromUser
-        // getHistoryFromGroup
-        return new OperationFailResponse(joinedRoomsChatHistoryCommand.getMessageId(), "Unknown command");
-    }
+//    This call looks unnecessary, wait until client been implemented but divide it in two calls looks more appropriate
+//    /**
+//     * Handle messages received from user with content of type SendMessageToUserCommand
+//     *
+//     * @param username                      user username
+//     * @param joinedRoomsChatHistoryCommand content
+//     * @return command response
+//     */
+//    public BasicPackage handlerJoinedRoomsChatHistoryCommand(String username, JoinedRoomsChatHistoryCommand joinedRoomsChatHistoryCommand) {
+//        logger.info("Received message from type JoinedRoomsChatHistoryCommand from: " + username);
+//
+//        // getGroupsFromUser
+//        // getHistoryFromGroup
+//        return new OperationFailResponse(joinedRoomsChatHistoryCommand.getMessageId(), "Unknown command");
+//    }
 
     /**
      * Notify when user is subscribed to /user/queue/message
@@ -427,7 +422,7 @@ public class CommandAPIController {
             messageBrokerAPI.addUserReceiverMessagesCallback(username, new ReceiveHandler() {
                 @Override
                 public void onUserMessageArrive(String fromUsername, String message) {
-                    logger.debug("User message arrive callback with message from: " + fromUsername);
+                    logger.info("User message arrive callback with message from: " + fromUsername);
                     simpMessagingTemplate.convertAndSendToUser(username,
                             "/queue/message",
                             new MessageFromUserResponse(fromUsername, encryptionAPI.symmetricDecryptString(message)));
@@ -435,7 +430,7 @@ public class CommandAPIController {
 
                 @Override
                 public void onGroupMessageArrive(String fromUsername, String group, String message) {
-                    logger.debug("Group message arrive callback with message from: " + fromUsername + " and group:" + group);
+                    logger.info("Group message arrive callback with message from: " + fromUsername + " and group:" + group);
                     simpMessagingTemplate.convertAndSendToUser(username,
                             "/queue/message",
                             new MessageFromRoomResponse(fromUsername, group, encryptionAPI.symmetricDecryptString(message)));
@@ -443,7 +438,7 @@ public class CommandAPIController {
 
                 @Override
                 public void onUserFileArrive(String fromUsername, byte[] file) {
-                    logger.debug("User file arrive callback with message from: " + fromUsername);
+                    logger.info("User file arrive callback with message from: " + fromUsername);
                     simpMessagingTemplate.convertAndSendToUser(username,
                             "/queue/message",
                             new FileFromUserResponse(fromUsername, encryptionAPI.symmetricDecryptFile(file)));
@@ -451,7 +446,7 @@ public class CommandAPIController {
 
                 @Override
                 public void onGroupFileArrive(String fromUsername, String group, byte[] file) {
-                    logger.debug("Group file arrive callback with message from: " + fromUsername + " and group:" + group);
+                    logger.info("Group file arrive callback with message from: " + fromUsername + " and group:" + group);
                     simpMessagingTemplate.convertAndSendToUser(username,
                             "/queue/message",
                             new FileFromRoomResponse(fromUsername, group, encryptionAPI.symmetricDecryptFile(file)));
