@@ -70,6 +70,15 @@ public class MessageBrokerAPI {
     }
 
     /**
+     * Notify broker than a group have been deleted
+     *
+     * @param groupName group name
+     */
+    public void deleteGroup(@NonNull String groupName) {
+        // TODO:
+    }
+
+    /**
      * Notify broker than an user have been added to a group
      *
      * @param username  user username

@@ -1,11 +1,21 @@
 package com.eina.chat.backendapi.service;
 
-import com.eina.chat.backendapi.security.AccessLevels;
+import com.eina.chat.backendapi.model.UserDao;
+import com.eina.chat.backendapi.model.UserVo;
 import lombok.NonNull;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.Optional;
 
 @Service
 public class UserAccountDatabaseAPI {
+    /**
+     * User database
+     */
+    @Autowired
+    private UserDao userDao;
+
     /**
      * Create user if doesn't exist yet
      *
@@ -14,7 +24,9 @@ public class UserAccountDatabaseAPI {
      * @param role              user role
      */
     public void createUser(@NonNull String username, @NonNull String encryptedPassword, @NonNull String role) {
-        // TODO:
+        if (!userDao.existsById(username)) {
+            userDao.save(new UserVo(username, encryptedPassword, role));
+        }
     }
 
     /**
@@ -23,7 +35,8 @@ public class UserAccountDatabaseAPI {
      * @param username user username
      */
     public void deleteUser(@NonNull String username) {
-        // TODO:
+        if (userDao.existsById(username))
+            userDao.deleteById(username);
     }
 
     /**
@@ -33,8 +46,7 @@ public class UserAccountDatabaseAPI {
      * @return true if user exist, false otherwise
      */
     public boolean checkUserExist(@NonNull String username) {
-        // TODO:
-        return true;
+        return userDao.existsById(username);
     }
 
     /**
@@ -45,17 +57,17 @@ public class UserAccountDatabaseAPI {
      * @return true if user exist and match, false otherwise
      */
     public boolean checkUserCredentials(@NonNull String username, @NonNull String encryptedPassword) {
-        // TODO:
-        return true;
+        return userDao.existsByUsernameAndPassword(username, encryptedPassword);
     }
 
     /**
      * Get role of user
+     *
      * @param username user username
      * @return user role if user exist, null otherwise
      */
-    public String getUserRole(@NonNull String username){
-        // TODO:
-        return AccessLevels.ROLE_USER;
+    public String getUserRole(@NonNull String username) {
+        Optional<UserVo> userVo = userDao.findById(username);
+        return userVo.map(UserVo::getRole).orElse(null);
     }
 }

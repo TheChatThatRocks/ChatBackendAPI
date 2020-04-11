@@ -4,6 +4,46 @@
       "name": "app.back-end-api-ws-uri",
       "type": "java.lang.String",
       "description": "Web server backend location."
+    },
+    {
+      "name": "app.max-file-size",
+      "type": "java.lang.Integer",
+      "description": "Max file size in MB."
+    },
+    {
+      "name": "app.max-message-length",
+      "type": "java.lang.Integer",
+      "description": "Max message length."
+    },
+    {
+      "name": "app.max-username-length",
+      "type": "java.lang.Integer",
+      "description": "Max username length."
+    },
+    {
+      "name": "app.min-username-length",
+      "type": "java.lang.Integer",
+      "description": "Min username length."
+    },
+    {
+      "name": "app.max-password-length",
+      "type": "java.lang.Integer",
+      "description": "Max password length."
+    },
+    {
+      "name": "app.min-password-length",
+      "type": "java.lang.Integer",
+      "description": "Min password length."
+    },
+    {
+      "name": "app.max-room-length",
+      "type": "java.lang.Integer",
+      "description": "Max room length."
+    },
+    {
+      "name": "app.min-room-length",
+      "type": "java.lang.Integer",
+      "description": "Min room length."
     }
   ]
 }
