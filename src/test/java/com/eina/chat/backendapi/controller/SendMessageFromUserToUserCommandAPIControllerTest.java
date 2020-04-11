@@ -1,14 +1,14 @@
 package com.eina.chat.backendapi.controller;
 
-import com.eina.chat.backendapi.model.User;
 import com.eina.chat.backendapi.protocol.packages.*;
+import com.eina.chat.backendapi.protocol.packages.common.response.OperationFailResponse;
 import com.eina.chat.backendapi.protocol.packages.message.request.SendMessageToUserCommand;
 import com.eina.chat.backendapi.protocol.packages.message.response.MessageFromUserResponse;
-import com.eina.chat.backendapi.protocol.packages.message.response.OperationSucceedResponse;
+import com.eina.chat.backendapi.protocol.packages.common.response.OperationSucceedResponse;
 import com.eina.chat.backendapi.security.AccessLevels;
+import com.eina.chat.backendapi.service.GroupsManagementDatabaseAPI;
 import com.eina.chat.backendapi.service.MessageBrokerAPI;
 import com.eina.chat.backendapi.service.UserAccountDatabaseAPI;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -25,6 +25,7 @@ import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.messaging.WebSocketStompClient;
 
 import java.lang.reflect.Type;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -34,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-public class CommandAPIControllerTest {
+public class SendMessageFromUserToUserCommandAPIControllerTest {
     @LocalServerPort
     private int port;
 
@@ -45,11 +46,14 @@ public class CommandAPIControllerTest {
     private String backEndURI;
 
     // Logger
-    private static final Logger LOG = LoggerFactory.getLogger(CommandAPIControllerTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SendMessageFromUserToUserCommandAPIControllerTest.class);
 
     // User database service
     @Autowired
     private UserAccountDatabaseAPI userAccountDatabaseAPI;
+
+    @Autowired
+    private GroupsManagementDatabaseAPI groupsManagementDatabaseAPI;
 
     // RabbitMQ API
     @Autowired
@@ -62,34 +66,49 @@ public class CommandAPIControllerTest {
     final private String passUser1 = "test";
     final private String passUser2 = "test";
 
+    final private int sendMessageID = 4;
+    final private String sendMessageContent = "testMessage";
+
 
     @BeforeEach
     public void setupForEach() {
-        if (userAccountDatabaseAPI.checkUserExist(nameUser1)) {
-            userAccountDatabaseAPI.deleteUser(nameUser1);
-            messageBrokerAPI.deleteUser(nameUser1);
-        }
-        if (userAccountDatabaseAPI.checkUserExist(nameUser2)) {
-            userAccountDatabaseAPI.deleteUser(nameUser2);
-            messageBrokerAPI.deleteUser(nameUser2);
+        // Delete users from all databases
+        userAccountDatabaseAPI.deleteUser(nameUser1);
+        userAccountDatabaseAPI.deleteUser(nameUser2);
+
+        // Delete groups where are admin
+        List<String> groupsWereAdminUser1 = groupsManagementDatabaseAPI.getAllGroupsWhereIsAdmin(nameUser1);
+        for (String i : groupsWereAdminUser1){
+            messageBrokerAPI.deleteGroup(i);
         }
 
+        List<String> groupsWereAdminUser2 = groupsManagementDatabaseAPI.getAllGroupsWhereIsAdmin(nameUser1);
+        for (String i : groupsWereAdminUser2){
+            messageBrokerAPI.deleteGroup(i);
+        }
+
+        // Delete users from broker
+        messageBrokerAPI.deleteUser(nameUser1);
+        messageBrokerAPI.deleteUser(nameUser2);
+
+        // Create users in database
         userAccountDatabaseAPI.createUser(nameUser1, passUser1, AccessLevels.ROLE_USER);
         userAccountDatabaseAPI.createUser(nameUser2, passUser2, AccessLevels.ROLE_USER);
+
+        // Create users in broker
         messageBrokerAPI.createUser(nameUser1);
         messageBrokerAPI.createUser(nameUser2);
     }
 
-    @AfterEach
-    public void deleteForEach() {
-        if (userAccountDatabaseAPI.checkUserExist(nameUser1)) {
-            userAccountDatabaseAPI.deleteUser(nameUser1);
-            messageBrokerAPI.deleteUser(nameUser1);
-        }
-        if (userAccountDatabaseAPI.checkUserExist(nameUser2)) {
-            userAccountDatabaseAPI.deleteUser(nameUser2);
-            messageBrokerAPI.deleteUser(nameUser2);
-        }
+    @BeforeEach
+    public void cleanForEach() {
+        // Delete users from all databases
+        userAccountDatabaseAPI.deleteUser(nameUser1);
+        userAccountDatabaseAPI.deleteUser(nameUser2);
+
+        // Delete users from broker
+        messageBrokerAPI.deleteUser(nameUser1);
+        messageBrokerAPI.deleteUser(nameUser2);
     }
 
 
@@ -97,13 +116,6 @@ public class CommandAPIControllerTest {
     public void sendMessageFromUserToUserBoothOnline() throws Exception {
         // Handle exceptions in threads
         final AtomicReference<Throwable> failure = new AtomicReference<>();
-
-        // Variables
-        String nameUser1 = "testUser1";
-        String nameUser2 = "testUser2";
-
-        String passUser1 = "test";
-        String passUser2 = "test";
 
         WebSocketHttpHeaders headersUser1 = new WebSocketHttpHeaders();
         WebSocketHttpHeaders headersUser2 = new WebSocketHttpHeaders();
@@ -137,8 +149,6 @@ public class CommandAPIControllerTest {
         // Subscribe to the channels and send message
         // We have to receive 2 messages
         final CountDownLatch messagesToReceive = new CountDownLatch(2);
-        final int sendMessageID = 4;
-        final String sendMessageContent = "testMessage";
 
         sessionUser1.subscribe("/user/queue/message", new StompFrameHandler() {
             @Override
@@ -189,6 +199,10 @@ public class CommandAPIControllerTest {
                 BasicPackage errorResponse = (BasicPackage) payload;
                 if (errorResponse.getMessageId() == sendMessageID && errorResponse instanceof OperationSucceedResponse)
                     messagesToReceive.countDown();
+
+                else if(errorResponse.getMessageId() == sendMessageID && errorResponse instanceof OperationFailResponse)
+                    failure.set(new Exception(((OperationFailResponse) errorResponse).getDescription()));
+
                 else
                     failure.set(new Exception("Message with bad content in User1 errors"));
             }
@@ -262,8 +276,6 @@ public class CommandAPIControllerTest {
         // We have to receive 2 messages
         final CountDownLatch messagesToReceiveUser1 = new CountDownLatch(1);
         final CountDownLatch messagesToReceiveUser2 = new CountDownLatch(1);
-        final int sendMessageID = 4;
-        final String sendMessageContent = "testMessage";
 
         sessionUser1.subscribe("/user/queue/message", new StompFrameHandler() {
             @Override

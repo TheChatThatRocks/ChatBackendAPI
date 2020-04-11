@@ -31,22 +31,6 @@ public class MessageHistoryDatabaseAPI {
     }
 
     /**
-     * Delete all messages saved from group
-     * @param groupName group name
-     */
-    public void deleteMessagesFromGroup(String groupName){
-        // TODO:
-    }
-
-    /**
-     * Delete all files saved from group
-     * @param groupName group name
-     */
-    public void deleteFilesFromGroup(String groupName){
-        // TODO:
-    }
-
-    /**
      * Get all messages saved from group in the same order they was inserted
      * @param groupName group name
      */

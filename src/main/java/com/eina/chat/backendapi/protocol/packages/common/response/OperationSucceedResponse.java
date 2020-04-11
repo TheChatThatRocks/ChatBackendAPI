@@ -1,4 +1,4 @@
-package com.eina.chat.backendapi.protocol.packages.message.response;
+package com.eina.chat.backendapi.protocol.packages.common.response;
 
 import com.eina.chat.backendapi.protocol.packages.BasicPackage;
 import com.eina.chat.backendapi.protocol.packages.TypesOfMessage;

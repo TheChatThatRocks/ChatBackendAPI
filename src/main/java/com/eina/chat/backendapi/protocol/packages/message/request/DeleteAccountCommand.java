@@ -1,18 +1,17 @@
-package com.eina.chat.backendapi.protocol.packages.signup.response;
+package com.eina.chat.backendapi.protocol.packages.message.request;
 
 import com.eina.chat.backendapi.protocol.packages.BasicPackage;
 import com.eina.chat.backendapi.protocol.packages.TypesOfMessage;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 
-@JsonTypeName(TypesOfMessage.SIGN_UP_SUCCESS)
-public class SignUpSuccessResponse extends BasicPackage {
+@JsonTypeName(TypesOfMessage.DELETE_ACCOUNT)
+public class DeleteAccountCommand extends BasicPackage {
     @SuppressWarnings("unused")
-    public SignUpSuccessResponse() {
-        super();
+    public DeleteAccountCommand() {
     }
 
     @SuppressWarnings("unused")
-    public SignUpSuccessResponse(int messageId) {
+    public DeleteAccountCommand(int messageId) {
         super(messageId);
     }
 }

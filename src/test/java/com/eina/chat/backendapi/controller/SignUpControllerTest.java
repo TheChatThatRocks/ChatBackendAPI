@@ -1,11 +1,11 @@
 package com.eina.chat.backendapi.controller;
 
-import com.eina.chat.backendapi.model.User;
 import com.eina.chat.backendapi.protocol.packages.*;
+import com.eina.chat.backendapi.protocol.packages.common.response.OperationFailResponse;
+import com.eina.chat.backendapi.protocol.packages.common.response.OperationSucceedResponse;
 import com.eina.chat.backendapi.protocol.packages.signup.request.AddAccountCommand;
-import com.eina.chat.backendapi.protocol.packages.signup.response.SignUpErrorResponse;
-import com.eina.chat.backendapi.protocol.packages.signup.response.SignUpSuccessResponse;
 import com.eina.chat.backendapi.security.AccessLevels;
+import com.eina.chat.backendapi.service.GroupsManagementDatabaseAPI;
 import com.eina.chat.backendapi.service.MessageBrokerAPI;
 import com.eina.chat.backendapi.service.UserAccountDatabaseAPI;
 import org.junit.jupiter.api.*;
@@ -20,6 +20,7 @@ import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.messaging.WebSocketStompClient;
 
 import java.lang.reflect.Type;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -43,6 +44,9 @@ public class SignUpControllerTest {
     @Autowired
     private UserAccountDatabaseAPI userAccountDatabaseAPI;
 
+    @Autowired
+    private GroupsManagementDatabaseAPI groupsManagementDatabaseAPI;
+
     // RabbitMQ API
     @Autowired
     private MessageBrokerAPI messageBrokerAPI;
@@ -53,18 +57,26 @@ public class SignUpControllerTest {
 
     @BeforeEach
     public void setupForEach() {
-        if (userAccountDatabaseAPI.checkUserExist(username)) {
-            userAccountDatabaseAPI.deleteUser(username);
-            messageBrokerAPI.deleteUser(username);
+        // Delete users from all databases
+        userAccountDatabaseAPI.deleteUser(username);
+
+        // Delete groups where are admin
+        List<String> groupsWereAdminUser1 = groupsManagementDatabaseAPI.getAllGroupsWhereIsAdmin(username);
+        for (String i : groupsWereAdminUser1){
+            messageBrokerAPI.deleteGroup(i);
         }
+
+        // Delete users from broker
+        messageBrokerAPI.deleteUser(username);
     }
 
-    @AfterEach
-    public void deleteForEach() {
-        if (userAccountDatabaseAPI.checkUserExist(username)) {
-            userAccountDatabaseAPI.deleteUser(username);
-            messageBrokerAPI.deleteUser(username);
-        }
+    @BeforeEach
+    public void cleanForEach() {
+        // Delete users from all databases
+        userAccountDatabaseAPI.deleteUser(username);
+
+        // Delete users from broker
+        messageBrokerAPI.deleteUser(username);
     }
 
     /**
@@ -104,7 +116,7 @@ public class SignUpControllerTest {
             @Override
             public void handleFrame(StompHeaders headers, Object payload) {
                 BasicPackage errorResponse = (BasicPackage) payload;
-                if (errorResponse.getMessageId() == messageId && errorResponse instanceof SignUpSuccessResponse)
+                if (errorResponse.getMessageId() == messageId && errorResponse instanceof OperationSucceedResponse)
                     messagesToReceive.countDown();
                 else {
                     failure.set(new Exception("Unexpected message received or sign-up fail"));
@@ -168,7 +180,7 @@ public class SignUpControllerTest {
             @Override
             public void handleFrame(StompHeaders headers, Object payload) {
                 BasicPackage errorResponse = (BasicPackage) payload;
-                if (errorResponse.getMessageId() == messageId && errorResponse instanceof SignUpErrorResponse)
+                if (errorResponse.getMessageId() == messageId && errorResponse instanceof OperationFailResponse)
                     messagesToReceive.countDown();
                 else {
                     failure.set(new Exception("Unexpected message received or sign-up fail"));
