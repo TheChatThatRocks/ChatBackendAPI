@@ -9,8 +9,7 @@ public class GroupVo {
     @Id
     private String name;
 
-    // TODO: Check this optional parameters
-    @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    @ManyToOne(fetch = FetchType.EAGER)
     private UserVo admin;
 
     // TODO: Check this optional parameters
