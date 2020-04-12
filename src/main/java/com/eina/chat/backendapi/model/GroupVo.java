@@ -45,6 +45,10 @@ public class GroupVo {
         return members;
     }
 
+    public void setMembers(List<UserVo> members) {
+        this.members = members;
+    }
+
     public void addMember(UserVo member) {
         this.members.add(member);
     }
