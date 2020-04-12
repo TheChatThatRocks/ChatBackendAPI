@@ -58,12 +58,12 @@ public class Consumer implements MessageListener{
             if (msgProperties.getContentType().equals("TEXT")){
                 String body = new String(message.getBody());
                 if (agents[1].equals("any")){// It's a private msg
-                    userReceiveHandler.onUserMessageArrive(agents[2], body);
+                    userReceiveHandler.onUserMessageArrive(agents[0], body);
                     logger.info("[" + agents[2] + "] Received from [" + agents[0] + "]: " + body);
                     return;
                 }else if (agents[2].equals("any")){
                     String recvUser = msgProperties.getConsumerQueue();
-                    userReceiveHandler.onGroupMessageArrive(recvUser, agents[1], body);
+                    userReceiveHandler.onGroupMessageArrive(agents[0], agents[1], body);
                     logger.info("[" + recvUser + "] Received from group [" + agents[1] + "]: " + body);
                     return;
                 }
@@ -74,12 +74,12 @@ public class Consumer implements MessageListener{
                 byte[] body = message.getBody();
                 String introFile = new String(body, 0, min(body.length, MAX_LEN_FILE_CONTENT_LOG)) + "...";
                 if (agents[1].equals("any")){// It's a private msg
-                    userReceiveHandler.onUserFileArrive(agents[2], body);
+                    userReceiveHandler.onUserFileArrive(agents[0], body);
                     logger.info("[" + agents[2] + "] Received from [" + agents[0] + "]: " + introFile );
                     return;
                 }else if (agents[2].equals("any")){
                     String recvUser = msgProperties.getConsumerQueue();
-                    userReceiveHandler.onGroupFileArrive(recvUser, agents[1], body);
+                    userReceiveHandler.onGroupFileArrive(agents[0], agents[1], body);
                     logger.info("[" + recvUser + "] Received from group [" + agents[1] + "]: " + introFile );
                     return;
                 }

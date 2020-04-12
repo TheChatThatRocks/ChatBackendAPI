@@ -68,9 +68,9 @@ public class MessageBrokerAPITest {
             @Override
             public void onUserMessageArrive(String user, String message) {
                 if (user.equals("user1"))
-                    receiver1.countDown();
-                else if (user.equals("user2"))
                     receiver2.countDown();
+                else if (user.equals("user2"))
+                    receiver1.countDown();
                 else fail("Unknown user");
             }
         }
@@ -111,10 +111,10 @@ public class MessageBrokerAPITest {
 //                    assert (group2.tryAcquire()): "Group2 Could not acquire token";
                 }else fail("Unknown group");
                 if (user.equals("user1"))
-                    user1.release();
+                    user2.release();
 //                    assert (user1.tryAcquire()): "User1 Could not acquire token";
                 else if (user.equals("user2"))
-                    user2.release();
+                    user1.release();
                     //                    assert (user2.tryAcquire()): "User2 Could not acquire token";
                 else fail("Unknown user");
             }
@@ -191,9 +191,9 @@ public class MessageBrokerAPITest {
             @Override
             public void onUserFileArrive(String username, byte[] file) {
                 if (username.equals("user1"))
-                    user1.release();
-                else if (username.equals("user2"))
                     user2.release();
+                else if (username.equals("user2"))
+                    user1.release();
                 else fail("Unknown user");
                 assert (Arrays.equals(file, fileToSend)): "File content has changed";
             }
