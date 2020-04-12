@@ -10,6 +10,7 @@ import com.eina.chat.backendapi.service.GroupsManagementDatabaseAPI;
 import com.eina.chat.backendapi.service.MessageBrokerAPI;
 import com.eina.chat.backendapi.service.UserAccountDatabaseAPI;
 import org.apache.commons.lang3.RandomUtils;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -115,7 +116,7 @@ public class SendFileToRoomCommandAPIControllerTest {
         messageBrokerAPI.addUserToGroup(nameUser2, roomName);
     }
 
-    @BeforeEach
+    @AfterEach
     public void cleanForEach() {
         // Delete users from all databases
         userAccountDatabaseAPI.deleteUser(nameUser1);

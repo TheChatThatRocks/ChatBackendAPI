@@ -9,6 +9,7 @@ import com.eina.chat.backendapi.security.AccessLevels;
 import com.eina.chat.backendapi.service.GroupsManagementDatabaseAPI;
 import com.eina.chat.backendapi.service.MessageBrokerAPI;
 import com.eina.chat.backendapi.service.UserAccountDatabaseAPI;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -100,7 +101,7 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
         messageBrokerAPI.createUser(nameUser2);
     }
 
-    @BeforeEach
+    @AfterEach
     public void cleanForEach() {
         // Delete users from all databases
         userAccountDatabaseAPI.deleteUser(nameUser1);

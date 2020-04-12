@@ -70,7 +70,7 @@ public class SignUpControllerTest {
         messageBrokerAPI.deleteUser(username);
     }
 
-    @BeforeEach
+    @AfterEach
     public void cleanForEach() {
         // Delete users from all databases
         userAccountDatabaseAPI.deleteUser(username);
