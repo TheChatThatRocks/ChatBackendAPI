@@ -102,20 +102,21 @@ public class MessageBrokerAPITest {
         final Semaphore user2 = new Semaphore(0);
 
         class UserListener extends ReceiveHandlerTest {
+            String userRecv;
+            public UserListener(String user){
+                this.userRecv = user;
+            }
             @Override
             public void onGroupMessageArrive(String user, String group, String message){
                 if (group.equals("group1")){
                     group1.release();
                 }else if (group.equals("group2")){
                     group2.release();
-//                    assert (group2.tryAcquire()): "Group2 Could not acquire token";
                 }else fail("Unknown group");
-                if (user.equals("user1"))
-                    user2.release();
-//                    assert (user1.tryAcquire()): "User1 Could not acquire token";
-                else if (user.equals("user2"))
+                if (user.equals("sender")&& userRecv.equals("user1") )
                     user1.release();
-                    //                    assert (user2.tryAcquire()): "User2 Could not acquire token";
+                else if (user.equals("sender") && userRecv.equals("user2") )
+                    user2.release();
                 else fail("Unknown user");
             }
         }
@@ -123,8 +124,8 @@ public class MessageBrokerAPITest {
         messageBrokerAPI.createUser("user1");
         messageBrokerAPI.createUser("user2");
         messageBrokerAPI.createUser("sender");
-        messageBrokerAPI.addUserReceiverMessagesCallback("user1", new UserListener());
-        messageBrokerAPI.addUserReceiverMessagesCallback("user2", new UserListener());
+        messageBrokerAPI.addUserReceiverMessagesCallback("user1", new UserListener("user1"));
+        messageBrokerAPI.addUserReceiverMessagesCallback("user2", new UserListener("user2"));
 
 
         // Message sent to empty group doesn't arrive
@@ -233,16 +234,22 @@ public class MessageBrokerAPITest {
                             "socked for the coming centuries...").getBytes();
 
         class UserListener extends ReceiveHandlerTest {
+
+            String userRecv;
+            public UserListener(String user){
+                this.userRecv = user;
+            }
+
             @Override
-            public void onGroupFileArrive(String username, String group, byte[] file) {
+            public void onGroupFileArrive(String user, String group, byte[] file) {
                 if (group.equals("group1")){
                     group1.release();
                 }else if (group.equals("group2")){
                     group2.release();
                 }else fail("Unknown group");
-                if (username.equals("user1"))
+                if (user.equals("sender")&& userRecv.equals("user1") )
                     user1.release();
-                else if (username.equals("user2"))
+                else if (user.equals("sender") && userRecv.equals("user2") )
                     user2.release();
                 else fail("Unknown user");
                 assert (Arrays.equals(file, fileToSend)): "File content has changed";
@@ -252,8 +259,8 @@ public class MessageBrokerAPITest {
         messageBrokerAPI.createUser("user1");
         messageBrokerAPI.createUser("user2");
         messageBrokerAPI.createUser("sender");
-        messageBrokerAPI.addUserReceiverMessagesCallback("user1", new UserListener());
-        messageBrokerAPI.addUserReceiverMessagesCallback("user2", new UserListener());
+        messageBrokerAPI.addUserReceiverMessagesCallback("user1", new UserListener("user1"));
+        messageBrokerAPI.addUserReceiverMessagesCallback("user2", new UserListener("user2"));
 
 
         // Message sent to empty group doesn't arrive
