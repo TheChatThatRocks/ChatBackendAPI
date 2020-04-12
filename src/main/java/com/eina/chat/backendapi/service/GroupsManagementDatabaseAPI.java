@@ -69,11 +69,11 @@ public class GroupsManagementDatabaseAPI {
      * @param groupName group name
      */
     public void removeUserFromGroup(@NonNull String username, @NonNull String groupName) {
-        Optional<UserVo> userVoOptional = userDao.findById(username);
         Optional<GroupVo> groupVoOptional = groupDao.findById(groupName);
-        if (userVoOptional.isPresent() && groupVoOptional.isPresent()) {
+        if (groupVoOptional.isPresent()) {
             GroupVo groupVo = groupVoOptional.get();
-            groupVo.getMembers().remove(userVoOptional.get());
+            groupVo.setMembers(groupVo.getMembers().stream().filter(userVo -> !userVo.getUsername().equals(username))
+                    .collect(Collectors.toList()));
             groupDao.save(groupVo);
         }
     }
@@ -95,8 +95,10 @@ public class GroupsManagementDatabaseAPI {
      * @return members of the group
      */
     public List<String> getGroupMembers(@NonNull String groupName) {
-        return groupDao.findById(groupName).map(groupVo -> groupVo.getMembers().stream().map(UserVo::getUsername)
+        List<String> groupMembers = groupDao.findById(groupName).map(groupVo -> groupVo.getMembers().stream().map(UserVo::getUsername)
                 .collect(Collectors.toList())).orElse(new ArrayList<>());
+        groupMembers.add(this.getGroupAdmin(groupName));
+        return groupMembers;
     }
 
     /**
@@ -118,23 +120,22 @@ public class GroupsManagementDatabaseAPI {
      * @return true if is group member
      */
     public boolean checkIfIsGroupMember(@NonNull String username, @NonNull String groupName) {
-        Optional<UserVo> userVoOptional = userDao.findById(username);
-        Optional<GroupVo> groupVoOptional = groupDao.findById(groupName);
-        if (userVoOptional.isPresent() && groupVoOptional.isPresent())
-            return groupVoOptional.get().getMembers().contains(userVoOptional.get());
-        else
-            return false;
+        return groupDao.findById(groupName).map(groupVo -> groupVo.getMembers().stream()
+                .anyMatch(userVo -> userVo.getUsername().equals(username))).orElse(false)
+                || this.checkIfIsGroupAdmin(username, groupName);
     }
 
     /**
      * Get all groups where user is member
      *
      * @param username user username
-     * @return all groups where user is member
+     * @return all groups where user is member (including where is admin)
      */
     public List<String> getAllGroupsWhereIsMember(@NonNull String username) {
-        return userDao.findById(username).map(vo -> vo.getGroups().stream()
+        List<String> groupsWhereIsMember = userDao.findById(username).map(vo -> vo.getGroups().stream()
                 .map(GroupVo::getName).collect(Collectors.toList())).orElseGet(ArrayList::new);
+        groupsWhereIsMember.addAll(this.getAllGroupsWhereIsAdmin(username));
+        return groupsWhereIsMember;
     }
 
     /**

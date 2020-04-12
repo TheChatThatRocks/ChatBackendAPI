@@ -242,10 +242,10 @@ public class CommandAPIController {
         if (removeUserFromChatRoom.getRoomName() == null || removeUserFromChatRoom.getUsername() == null)
             return new OperationFailResponse(removeUserFromChatRoom.getMessageId(), "Non-existent user or room");
 
-        else if (groupsManagementDatabaseAPI.checkIfIsGroupAdmin(username, removeUserFromChatRoom.getRoomName()))
+        else if (!groupsManagementDatabaseAPI.checkIfIsGroupAdmin(username, removeUserFromChatRoom.getRoomName()))
             return new OperationFailResponse(removeUserFromChatRoom.getMessageId(), "You are not the room admin");
 
-        else if (groupsManagementDatabaseAPI.checkIfIsGroupMember(removeUserFromChatRoom.getUsername(), removeUserFromChatRoom.getRoomName()))
+        else if (!groupsManagementDatabaseAPI.checkIfIsGroupMember(removeUserFromChatRoom.getUsername(), removeUserFromChatRoom.getRoomName()))
             return new OperationFailResponse(removeUserFromChatRoom.getMessageId(), "Non-existent user in the room");
 
         else if (groupsManagementDatabaseAPI.checkIfIsGroupAdmin(removeUserFromChatRoom.getUsername(), removeUserFromChatRoom.getRoomName()))
