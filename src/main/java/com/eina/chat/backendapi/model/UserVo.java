@@ -1,10 +1,10 @@
 package com.eina.chat.backendapi.model;
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.ManyToMany;
+import javax.persistence.*;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 public class UserVo {
@@ -14,6 +14,9 @@ public class UserVo {
     private String password;
 
     private String role;
+
+    @OneToMany(mappedBy = "admin", cascade = CascadeType.REMOVE)
+    private Set<GroupVo> administratedGroups = new LinkedHashSet<>();
 
     @ManyToMany(mappedBy = "members")
     private List<GroupVo> groups = new ArrayList<>();

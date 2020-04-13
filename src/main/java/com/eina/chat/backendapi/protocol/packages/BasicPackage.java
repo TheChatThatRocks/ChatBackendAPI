@@ -21,7 +21,6 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
         @JsonSubTypes.Type(value = AddAccountCommand.class, name = TypesOfMessage.ADD_ACCOUNT),
         @JsonSubTypes.Type(value = OperationSucceedResponse.class, name = TypesOfMessage.OPERATION_SUCCEED),
         @JsonSubTypes.Type(value = OperationFailResponse.class, name = TypesOfMessage.OPERATION_FAIL),
-        @JsonSubTypes.Type(value = OperationFailResponse.class, name = TypesOfMessage.SEND_MESSAGE_TO_USER_ERROR),
         @JsonSubTypes.Type(value = AddUserToChatRoomCommand.class, name = TypesOfMessage.ADD_USER_TO_CHAT_ROOM),
         @JsonSubTypes.Type(value = CreateRoomCommand.class, name = TypesOfMessage.CREATE_ROOM),
         @JsonSubTypes.Type(value = DeleteAccountCommand.class, name = TypesOfMessage.DELETE_ACCOUNT),
