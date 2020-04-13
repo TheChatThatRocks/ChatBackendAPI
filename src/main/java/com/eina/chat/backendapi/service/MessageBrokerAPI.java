@@ -56,6 +56,8 @@ public class MessageBrokerAPI {
         rabbitAdmin.declareQueue(myQueue);
         Binding privateMsg = BindingBuilder.bind(myQueue).to(topic).with("*.any." + username);
         rabbitAdmin.declareBinding(privateMsg);
+        Binding bcast = BindingBuilder.bind(myQueue).to(topic).with("*.any.bcast");
+        rabbitAdmin.declareBinding(bcast);
         logger.info("[" + username + "] User created");
     }
 
@@ -89,7 +91,8 @@ public class MessageBrokerAPI {
      * @param groupName group name
      */
     public void addUserToGroup(@NonNull String username, @NonNull String groupName) {
-        Binding groupBind = BindingBuilder.bind(new Queue(username)).to(topic).with("*." + groupName + ".any");
+//        Binding groupBind = BindingBuilder.bind(new Queue(username)).to(topic).with("*." + groupName + ".any");
+        Binding groupBind = BindingBuilder.bind(new Queue(username)).to(topic).with("*." + groupName + ".*");
         rabbitAdmin.declareBinding(groupBind);
         logger.info("[" + username + "] Added to group: " + groupName);
     }
@@ -159,7 +162,6 @@ public class MessageBrokerAPI {
      * @param encryptedMessage encrypted message to send
      */
     public void sendMessageToGroup(String usernameUserFrom, String groupNameGroupTo, String encryptedMessage) {
-        //TODO: check if user belong to group
         producer.sendMessage(usernameUserFrom + "." + groupNameGroupTo + ".any", encryptedMessage);
         logger.info("[" + usernameUserFrom + "] Sent message to group [" + groupNameGroupTo + "]: " + encryptedMessage);
     }
