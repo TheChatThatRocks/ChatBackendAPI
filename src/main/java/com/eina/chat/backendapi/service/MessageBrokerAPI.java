@@ -91,8 +91,8 @@ public class MessageBrokerAPI {
      * @param groupName group name
      */
     public void addUserToGroup(@NonNull String username, @NonNull String groupName) {
-//        Binding groupBind = BindingBuilder.bind(new Queue(username)).to(topic).with("*." + groupName + ".any");
-        Binding groupBind = BindingBuilder.bind(new Queue(username)).to(topic).with("*." + groupName + ".*");
+        Binding groupBind = BindingBuilder.bind(new Queue(username)).to(topic).with("*." + groupName + ".any");
+//        Binding groupBind = BindingBuilder.bind(new Queue(username)).to(topic).with("*." + groupName + ".*");
         rabbitAdmin.declareBinding(groupBind);
         logger.info("[" + username + "] Added to group: " + groupName);
     }
