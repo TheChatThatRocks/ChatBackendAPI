@@ -1,7 +1,7 @@
 package com.eina.chat.backendapi.service;
 
-import com.eina.chat.backendapi.model.UserDao;
-import com.eina.chat.backendapi.model.UserVo;
+import com.eina.chat.backendapi.data.relational.dao.UserDao;
+import com.eina.chat.backendapi.data.relational.model.UserVo;
 import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
