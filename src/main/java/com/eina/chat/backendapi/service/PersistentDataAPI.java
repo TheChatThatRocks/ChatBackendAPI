@@ -1,10 +1,16 @@
 package com.eina.chat.backendapi.service;
 
+import com.eina.chat.backendapi.data.documental.dao.GroupFileDao;
+import com.eina.chat.backendapi.data.documental.dao.GroupMessageDao;
+import com.eina.chat.backendapi.data.documental.model.GroupFileVo;
+import com.eina.chat.backendapi.data.documental.model.GroupMessageVo;
 import com.eina.chat.backendapi.data.relational.dao.GroupDao;
 import com.eina.chat.backendapi.data.relational.model.GroupVo;
 import com.eina.chat.backendapi.data.relational.dao.UserDao;
 import com.eina.chat.backendapi.data.relational.model.UserVo;
 import lombok.NonNull;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -12,7 +18,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
-public class GroupsManagementDatabaseAPI {
+public class PersistentDataAPI {
     /**
      * Group database
      */
@@ -25,6 +31,78 @@ public class GroupsManagementDatabaseAPI {
     @Autowired
     private UserDao userDao;
 
+    /**
+     * Messages database
+     */
+    @Autowired
+    private GroupMessageDao groupMessageDao;
+
+    /**
+     * Files database
+     */
+    @Autowired
+    private GroupFileDao groupFileDao;
+
+    /**
+     * Create user if doesn't exist yet
+     *
+     * @param username          user username
+     * @param encryptedPassword encrypted user password
+     * @param role              user role
+     */
+    public void createUser(@NonNull String username, @NonNull String encryptedPassword, @NonNull String role) {
+        if (!userDao.existsById(username)) {
+            userDao.save(new UserVo(username, encryptedPassword, role));
+        }
+    }
+
+    /**
+     * Delete user
+     *
+     * @param username user username
+     */
+    public void deleteUser(@NonNull String username) {
+        if (userDao.existsById(username)){
+            // Before delete the user, delete the content of the groups that will be deleted with the user
+            for (String groupName: getAllGroupsWhereIsAdmin(username))
+                deleteGroupStoredContent(groupName);
+
+            // Delete the user and the groups where is admin
+            userDao.deleteById(username);
+        }
+    }
+
+    /**
+     * Check if user exist
+     *
+     * @param username user username
+     * @return true if user exist, false otherwise
+     */
+    public boolean checkUserExist(@NonNull String username) {
+        return userDao.existsById(username);
+    }
+
+    /**
+     * Check if user credentials match
+     *
+     * @param username          user username
+     * @param encryptedPassword encrypted user password
+     * @return true if user exist and match, false otherwise
+     */
+    public boolean checkUserCredentials(@NonNull String username, @NonNull String encryptedPassword) {
+        return userDao.existsByUsernameAndPassword(username, encryptedPassword);
+    }
+
+    /**
+     * Get role of user
+     *
+     * @param username user username
+     * @return user role if user exist, null otherwise
+     */
+    public String getUserRole(@NonNull String username) {
+        Optional<UserVo> userVo = userDao.findById(username);
+        return userVo.map(UserVo::getRole).orElse(null);
+    }
 
     /**
      * Create group if doesn't exist yet
@@ -42,8 +120,13 @@ public class GroupsManagementDatabaseAPI {
      * @param groupName group name
      */
     public void deleteGroup(@NonNull String groupName) {
-        if (groupDao.existsById(groupName))
+        if (groupDao.existsById(groupName)){
+            // Delete the content associated with the group
+            deleteGroupStoredContent(groupName);
+
+            // Delete the group itself
             groupDao.deleteById(groupName);
+        }
     }
 
     /**
@@ -158,5 +241,58 @@ public class GroupsManagementDatabaseAPI {
      */
     public boolean checkIfGroupExist(@NonNull String groupName) {
         return groupDao.existsById(groupName);
+    }
+
+    /**
+     * Save message send from user UserFrom to group GroupTo
+     *
+     * @param usernameUserFrom UserFrom username
+     * @param groupNameGroupTo GroupTo group name
+     * @param encryptedMessage encrypted message to send
+     */
+    public void saveMessageFromGroup(String usernameUserFrom, String groupNameGroupTo, String encryptedMessage) {
+        groupMessageDao.insert(new GroupMessageVo(usernameUserFrom, groupNameGroupTo, encryptedMessage));
+    }
+
+    /**
+     * Save from user UserFrom to group GroupTo
+     *
+     * @param usernameUserFrom UserFrom username
+     * @param groupNameGroupTo GroupTo group name
+     * @param encryptedFile    encrypted file to send
+     */
+    public void saveFileToGroup(String usernameUserFrom, String groupNameGroupTo, byte[] encryptedFile) {
+        groupFileDao.insert(new GroupFileVo(usernameUserFrom, groupNameGroupTo, encryptedFile));
+    }
+
+    /**
+     * Get all messages saved from group in the same order they was inserted
+     *
+     * @param groupName group name
+     */
+    public List<Pair<String, String>> getOrderedMessagesFromGroup(String groupName) {
+        return groupMessageDao.getGroupMessageVosByGroupName(groupName).stream()
+                .map(groupMessageVo -> new ImmutablePair<>(groupMessageVo.getUsername(), groupMessageVo.getContent()))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Get all files saved from group in the same order they was inserted
+     *
+     * @param groupName group name
+     */
+    public List<Pair<String, byte[]>> getOrderedFilesFromGroup(String groupName) {
+        return groupFileDao.getGroupFileVosByGroupName(groupName).stream()
+                .map(groupMessageVo -> new ImmutablePair<>(groupMessageVo.getUsername(), groupMessageVo.getContent()))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Delete all files and messages from a group
+     * @param groupName group name
+     */
+    public void deleteGroupStoredContent(String groupName){
+        groupMessageDao.deleteGroupMessageVosByGroupName(groupName);
+        groupFileDao.deleteGroupFileVosByGroupName(groupName);
     }
 }

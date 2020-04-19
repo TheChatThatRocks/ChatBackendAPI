@@ -46,13 +46,7 @@ public class AdminAPIController {
      * Database API
      */
     @Autowired
-    private UserAccountDatabaseAPI userAccountDatabaseAPI;
-
-    @Autowired
-    private GroupsManagementDatabaseAPI groupsManagementDatabaseAPI;
-
-    @Autowired
-    private MessageHistoryDatabaseAPI messageHistoryDatabaseAPI;
+    private PersistentDataAPI persistentDataAPI;
 
     /**
      * Logger

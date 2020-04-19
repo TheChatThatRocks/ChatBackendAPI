@@ -7,16 +7,14 @@ public class GroupFileVo {
 
     private String username;
     private String groupName;
-    private String fileName;
     private byte[] content;
 
     public GroupFileVo() {
     }
 
-    public GroupFileVo(String username, String groupName, String fileName, byte[] content) {
+    public GroupFileVo(String username, String groupName, byte[] content) {
         this.username = username;
         this.groupName = groupName;
-        this.fileName = fileName;
         this.content = content;
     }
 
@@ -34,14 +32,6 @@ public class GroupFileVo {
 
     public void setGroupName(String groupName) {
         this.groupName = groupName;
-    }
-
-    public String getFileName() {
-        return fileName;
-    }
-
-    public void setFileName(String fileName) {
-        this.fileName = fileName;
     }
 
     public byte[] getContent() {

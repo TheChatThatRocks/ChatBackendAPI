@@ -5,9 +5,8 @@ import com.eina.chat.backendapi.protocol.packages.common.response.OperationFailR
 import com.eina.chat.backendapi.protocol.packages.common.response.OperationSucceedResponse;
 import com.eina.chat.backendapi.protocol.packages.signup.request.AddAccountCommand;
 import com.eina.chat.backendapi.security.AccessLevels;
-import com.eina.chat.backendapi.service.GroupsManagementDatabaseAPI;
 import com.eina.chat.backendapi.service.MessageBrokerAPI;
-import com.eina.chat.backendapi.service.UserAccountDatabaseAPI;
+import com.eina.chat.backendapi.service.PersistentDataAPI;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -40,12 +39,9 @@ public class SignUpControllerTest {
     @Value("${app.back-end-api-ws-uri:}")
     private String backEndURI;
 
-    // User database service
+    // Database service
     @Autowired
-    private UserAccountDatabaseAPI userAccountDatabaseAPI;
-
-    @Autowired
-    private GroupsManagementDatabaseAPI groupsManagementDatabaseAPI;
+    private PersistentDataAPI persistentDataAPI;
 
     // RabbitMQ API
     @Autowired
@@ -58,10 +54,10 @@ public class SignUpControllerTest {
     @BeforeEach
     public void setupForEach() {
         // Delete users from all databases
-        userAccountDatabaseAPI.deleteUser(username);
+        persistentDataAPI.deleteUser(username);
 
         // Delete groups where are admin
-        List<String> groupsWereAdminUser1 = groupsManagementDatabaseAPI.getAllGroupsWhereIsAdmin(username);
+        List<String> groupsWereAdminUser1 = persistentDataAPI.getAllGroupsWhereIsAdmin(username);
         for (String i : groupsWereAdminUser1){
             messageBrokerAPI.deleteGroup(i);
         }
@@ -73,7 +69,7 @@ public class SignUpControllerTest {
     @AfterEach
     public void cleanForEach() {
         // Delete users from all databases
-        userAccountDatabaseAPI.deleteUser(username);
+        persistentDataAPI.deleteUser(username);
 
         // Delete users from broker
         messageBrokerAPI.deleteUser(username);
@@ -143,8 +139,8 @@ public class SignUpControllerTest {
     @Test
     public void duplicatedUser() throws Exception {
         // Create user
-        if (!userAccountDatabaseAPI.checkUserExist(username)) {
-            userAccountDatabaseAPI.createUser(username, password, AccessLevels.ROLE_USER);
+        if (!persistentDataAPI.checkUserExist(username)) {
+            persistentDataAPI.createUser(username, password, AccessLevels.ROLE_USER);
             messageBrokerAPI.createUser(username);
         }
 

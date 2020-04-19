@@ -1,8 +1,7 @@
 package com.eina.chat.backendapi.data;
 
 import com.eina.chat.backendapi.security.AccessLevels;
-import com.eina.chat.backendapi.service.GroupsManagementDatabaseAPI;
-import com.eina.chat.backendapi.service.UserAccountDatabaseAPI;
+import com.eina.chat.backendapi.service.PersistentDataAPI;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,10 +12,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 public class UserDaoTest {
     // User database service
     @Autowired
-    private UserAccountDatabaseAPI userAccountDatabaseAPI;
-
-    @Autowired
-    private GroupsManagementDatabaseAPI groupsManagementDatabaseAPI;
+    private PersistentDataAPI persistentDataAPI;
 
     // Variables
     final private String nameUser1 = "testUser1";
@@ -30,16 +26,16 @@ public class UserDaoTest {
     @Test
     public void deletingAdminAccountWithoutDeletingGroupFirst() {
         // Create users in database
-        userAccountDatabaseAPI.createUser(nameUser1, passUser1, AccessLevels.ROLE_USER);
-        userAccountDatabaseAPI.createUser(nameUser2, passUser2, AccessLevels.ROLE_USER);
+        persistentDataAPI.createUser(nameUser1, passUser1, AccessLevels.ROLE_USER);
+        persistentDataAPI.createUser(nameUser2, passUser2, AccessLevels.ROLE_USER);
 
         // Create room
-        groupsManagementDatabaseAPI.createGroup(nameUser1, roomName);
+        persistentDataAPI.createGroup(nameUser1, roomName);
 
         // Delete admin account
-        userAccountDatabaseAPI.deleteUser(nameUser1);
+        persistentDataAPI.deleteUser(nameUser1);
 
         // Delete member account
-        userAccountDatabaseAPI.deleteUser(nameUser2);
+        persistentDataAPI.deleteUser(nameUser2);
     }
 }

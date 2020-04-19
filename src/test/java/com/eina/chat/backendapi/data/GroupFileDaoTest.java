@@ -26,11 +26,11 @@ public class GroupFileDaoTest {
         byte[] savedFileContent = RandomUtils.nextBytes(100);
 
         List<GroupFileVo> groupFileVoList = Arrays.asList(
-                new GroupFileVo("12", "12", "Prueba12", savedFileContent),
-                new GroupFileVo("13", "12", "Prueba13", savedFileContent),
-                new GroupFileVo("14", "12", "Prueba14", savedFileContent),
-                new GroupFileVo("15", "12", "Prueba15", savedFileContent),
-                new GroupFileVo("16", "12", "Prueba16", savedFileContent)
+                new GroupFileVo("12", "12", savedFileContent),
+                new GroupFileVo("13", "12", savedFileContent),
+                new GroupFileVo("14", "12", savedFileContent),
+                new GroupFileVo("15", "12", savedFileContent),
+                new GroupFileVo("16", "12", savedFileContent)
         );
 
         groupFileDao.insert(groupFileVoList);

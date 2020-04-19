@@ -5,9 +5,8 @@ import com.eina.chat.backendapi.protocol.packages.common.response.OperationFailR
 import com.eina.chat.backendapi.protocol.packages.common.response.OperationSucceedResponse;
 import com.eina.chat.backendapi.protocol.packages.message.request.CreateRoomCommand;
 import com.eina.chat.backendapi.security.AccessLevels;
-import com.eina.chat.backendapi.service.GroupsManagementDatabaseAPI;
 import com.eina.chat.backendapi.service.MessageBrokerAPI;
-import com.eina.chat.backendapi.service.UserAccountDatabaseAPI;
+import com.eina.chat.backendapi.service.PersistentDataAPI;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -51,12 +50,9 @@ public class CreateChatRoomCommandAPIControllerTest {
     // Logger
     private static final Logger LOG = LoggerFactory.getLogger(CreateChatRoomCommandAPIControllerTest.class);
 
-    // User database service
+    // Database service
     @Autowired
-    private UserAccountDatabaseAPI userAccountDatabaseAPI;
-
-    @Autowired
-    private GroupsManagementDatabaseAPI groupsManagementDatabaseAPI;
+    private PersistentDataAPI persistentDataAPI;
 
     // RabbitMQ API
     @Autowired
@@ -71,10 +67,10 @@ public class CreateChatRoomCommandAPIControllerTest {
     @BeforeEach
     public void setupForEach() {
         // Delete users from all databases
-        userAccountDatabaseAPI.deleteUser(nameAdminUser);
+        persistentDataAPI.deleteUser(nameAdminUser);
 
         // Delete groups where are admin
-        List<String> groupsWereAdminUser1 = groupsManagementDatabaseAPI.getAllGroupsWhereIsAdmin(nameAdminUser);
+        List<String> groupsWereAdminUser1 = persistentDataAPI.getAllGroupsWhereIsAdmin(nameAdminUser);
         for (String i : groupsWereAdminUser1){
             messageBrokerAPI.deleteGroup(i);
         }
@@ -83,7 +79,7 @@ public class CreateChatRoomCommandAPIControllerTest {
         messageBrokerAPI.deleteUser(nameAdminUser);
 
         // Create users in database
-        userAccountDatabaseAPI.createUser(nameAdminUser, passAdminUser, AccessLevels.ROLE_USER);
+        persistentDataAPI.createUser(nameAdminUser, passAdminUser, AccessLevels.ROLE_USER);
 
         // Create users in broker
         messageBrokerAPI.createUser(nameAdminUser);
@@ -95,13 +91,13 @@ public class CreateChatRoomCommandAPIControllerTest {
     @AfterEach
     public void cleanForEach() {
         // Delete users from all databases
-        userAccountDatabaseAPI.deleteUser(nameAdminUser);
+        persistentDataAPI.deleteUser(nameAdminUser);
 
         // Delete users from broker
         messageBrokerAPI.deleteUser(nameAdminUser);
 
         // Delete created room
-        groupsManagementDatabaseAPI.deleteGroup(roomName);
+        persistentDataAPI.deleteGroup(roomName);
         messageBrokerAPI.deleteGroup(roomName);
     }
 
@@ -184,6 +180,6 @@ public class CreateChatRoomCommandAPIControllerTest {
         }
 
         // Check if room have been created
-        assert (groupsManagementDatabaseAPI.checkIfIsGroupAdmin(nameAdminUser, roomName));
+        assert (persistentDataAPI.checkIfIsGroupAdmin(nameAdminUser, roomName));
     }
 }

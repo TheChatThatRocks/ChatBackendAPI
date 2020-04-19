@@ -50,13 +50,7 @@ public class CommandAPIController {
      * Database API
      */
     @Autowired
-    private UserAccountDatabaseAPI userAccountDatabaseAPI;
-
-    @Autowired
-    private GroupsManagementDatabaseAPI groupsManagementDatabaseAPI;
-
-    @Autowired
-    private MessageHistoryDatabaseAPI messageHistoryDatabaseAPI;
+    private PersistentDataAPI persistentDataAPI;
 
     /**
      * Logger
@@ -137,14 +131,14 @@ public class CommandAPIController {
     public BasicPackage handlerAddUserToChatRoom(String username, AddUserToChatRoomCommand addUserToChatRoomCommand) {
         logger.info("Received message from type AddUserToChatRoomCommand from: " + username);
         if (addUserToChatRoomCommand.getRoomName() == null || addUserToChatRoomCommand.getUsername() == null ||
-                !userAccountDatabaseAPI.checkUserExist(addUserToChatRoomCommand.getUsername()))
+                !persistentDataAPI.checkUserExist(addUserToChatRoomCommand.getUsername()))
             return new OperationFailResponse(addUserToChatRoomCommand.getMessageId(), "Non-existent user or room");
 
-        else if (!groupsManagementDatabaseAPI.checkIfIsGroupAdmin(username, addUserToChatRoomCommand.getRoomName()))
+        else if (!persistentDataAPI.checkIfIsGroupAdmin(username, addUserToChatRoomCommand.getRoomName()))
             return new OperationFailResponse(addUserToChatRoomCommand.getMessageId(), "You are not the room admin");
 
         else {
-            groupsManagementDatabaseAPI.addUserToGroup(addUserToChatRoomCommand.getUsername(), addUserToChatRoomCommand.getRoomName()
+            persistentDataAPI.addUserToGroup(addUserToChatRoomCommand.getUsername(), addUserToChatRoomCommand.getRoomName()
             );
             messageBrokerAPI.addUserToGroup(addUserToChatRoomCommand.getUsername(), addUserToChatRoomCommand.getRoomName());
             return new OperationSucceedResponse(addUserToChatRoomCommand.getMessageId());
@@ -165,11 +159,11 @@ public class CommandAPIController {
             return new OperationFailResponse(createRoomCommand.getMessageId(), "Room name must have between " +
                     minRoomLength.toString() + " and " + maxRoomLength.toString() + " characters");
 
-        else if (groupsManagementDatabaseAPI.checkIfGroupExist(createRoomCommand.getRoomName()))
+        else if (persistentDataAPI.checkIfGroupExist(createRoomCommand.getRoomName()))
             return new OperationFailResponse(createRoomCommand.getMessageId(), "The name of the room already exists");
 
         else {
-            groupsManagementDatabaseAPI.createGroup(username, createRoomCommand.getRoomName());
+            persistentDataAPI.createGroup(username, createRoomCommand.getRoomName());
             messageBrokerAPI.addUserToGroup(username, createRoomCommand.getRoomName());
             return new OperationSucceedResponse(createRoomCommand.getMessageId());
         }
@@ -187,7 +181,7 @@ public class CommandAPIController {
         logger.info("Received message from type DeleteAccountCommand from: " + username);
 
         // Delete all groups where is admin and the associated messages
-        List<String> administeredGroups = groupsManagementDatabaseAPI.getAllGroupsWhereIsAdmin(username);
+        List<String> administeredGroups = persistentDataAPI.getAllGroupsWhereIsAdmin(username);
         for (String group : administeredGroups) {
             // TODO: Send message group members informing the deletion
 
@@ -196,7 +190,7 @@ public class CommandAPIController {
         }
 
         // Delete user account
-        userAccountDatabaseAPI.deleteUser(username);
+        persistentDataAPI.deleteUser(username);
 
         // Delete user from broker
         messageBrokerAPI.deleteUser(username);
@@ -215,12 +209,12 @@ public class CommandAPIController {
         // TODO: May notify all group member of the deletion
         logger.info("Received message from type DeleteRoomCommand from: " + username);
         if (deleteRoomCommand.getRoomName() == null ||
-                !groupsManagementDatabaseAPI.checkIfIsGroupAdmin(username, deleteRoomCommand.getRoomName()))
+                !persistentDataAPI.checkIfIsGroupAdmin(username, deleteRoomCommand.getRoomName()))
             return new OperationFailResponse(deleteRoomCommand.getMessageId(), "You are not the room admin");
 
         else {
             // Delete group
-            groupsManagementDatabaseAPI.deleteGroup(deleteRoomCommand.getRoomName());
+            persistentDataAPI.deleteGroup(deleteRoomCommand.getRoomName());
 
             // Delete group from broker
             messageBrokerAPI.deleteGroup(deleteRoomCommand.getRoomName());
@@ -242,17 +236,17 @@ public class CommandAPIController {
         if (removeUserFromChatRoom.getRoomName() == null || removeUserFromChatRoom.getUsername() == null)
             return new OperationFailResponse(removeUserFromChatRoom.getMessageId(), "Non-existent user or room");
 
-        else if (!groupsManagementDatabaseAPI.checkIfIsGroupAdmin(username, removeUserFromChatRoom.getRoomName()))
+        else if (!persistentDataAPI.checkIfIsGroupAdmin(username, removeUserFromChatRoom.getRoomName()))
             return new OperationFailResponse(removeUserFromChatRoom.getMessageId(), "You are not the room admin");
 
-        else if (!groupsManagementDatabaseAPI.checkIfIsGroupMember(removeUserFromChatRoom.getUsername(), removeUserFromChatRoom.getRoomName()))
+        else if (!persistentDataAPI.checkIfIsGroupMember(removeUserFromChatRoom.getUsername(), removeUserFromChatRoom.getRoomName()))
             return new OperationFailResponse(removeUserFromChatRoom.getMessageId(), "Non-existent user in the room");
 
-        else if (groupsManagementDatabaseAPI.checkIfIsGroupAdmin(removeUserFromChatRoom.getUsername(), removeUserFromChatRoom.getRoomName()))
+        else if (persistentDataAPI.checkIfIsGroupAdmin(removeUserFromChatRoom.getUsername(), removeUserFromChatRoom.getRoomName()))
             return new OperationFailResponse(removeUserFromChatRoom.getMessageId(), "You can not remove yourself from the room");
 
         else {
-            groupsManagementDatabaseAPI.removeUserFromGroup(removeUserFromChatRoom.getUsername(), removeUserFromChatRoom.getRoomName()
+            persistentDataAPI.removeUserFromGroup(removeUserFromChatRoom.getUsername(), removeUserFromChatRoom.getRoomName()
             );
             messageBrokerAPI.removeUserFromGroup(removeUserFromChatRoom.getUsername(), removeUserFromChatRoom.getRoomName());
             return new OperationSucceedResponse(removeUserFromChatRoom.getMessageId());
@@ -285,7 +279,7 @@ public class CommandAPIController {
         if (sendFileToRoomCommand.getRoomName() == null)
             return new OperationFailResponse(sendFileToRoomCommand.getMessageId(), "Non-existent room");
 
-        else if (!groupsManagementDatabaseAPI.checkIfIsGroupMember(username, sendFileToRoomCommand.getRoomName()))
+        else if (!persistentDataAPI.checkIfIsGroupMember(username, sendFileToRoomCommand.getRoomName()))
             return new OperationFailResponse(sendFileToRoomCommand.getMessageId(), "You are not member of the room");
 
         else if (sendFileToRoomCommand.getFile() == null || sendFileToRoomCommand.getFile().length == 0 ||
@@ -296,7 +290,7 @@ public class CommandAPIController {
         else {
             messageBrokerAPI.sendFileToGroup(username, sendFileToRoomCommand.getRoomName(),
                     encryptionAPI.symmetricEncryptFile(sendFileToRoomCommand.getFile()));
-            messageHistoryDatabaseAPI.saveFileToGroup(username, sendFileToRoomCommand.getRoomName(),
+            persistentDataAPI.saveFileToGroup(username, sendFileToRoomCommand.getRoomName(),
                     encryptionAPI.symmetricEncryptFile(sendFileToRoomCommand.getFile()));
             return new OperationSucceedResponse(sendFileToRoomCommand.getMessageId());
         }
@@ -311,7 +305,7 @@ public class CommandAPIController {
      */
     public BasicPackage handlerSendFileToUserCommand(String username, SendFileToUserCommand sendFileToUserCommand) {
         logger.info("Received message from type SendFileToUserCommand from: " + username);
-        if (sendFileToUserCommand.getUsername() == null || !userAccountDatabaseAPI.checkUserExist(sendFileToUserCommand.getUsername()))
+        if (sendFileToUserCommand.getUsername() == null || !persistentDataAPI.checkUserExist(sendFileToUserCommand.getUsername()))
             return new OperationFailResponse(sendFileToUserCommand.getMessageId(), "Non-existent user");
 
         else if (sendFileToUserCommand.getFile() == null || sendFileToUserCommand.getFile().length == 0 ||
@@ -338,7 +332,7 @@ public class CommandAPIController {
         if (sendMessageToRoomCommand.getRoomName() == null)
             return new OperationFailResponse(sendMessageToRoomCommand.getMessageId(), "Non-existent room");
 
-        else if (!groupsManagementDatabaseAPI.checkIfIsGroupMember(username, sendMessageToRoomCommand.getRoomName()))
+        else if (!persistentDataAPI.checkIfIsGroupMember(username, sendMessageToRoomCommand.getRoomName()))
             return new OperationFailResponse(sendMessageToRoomCommand.getMessageId(), "You are not member of the room");
 
         else if (sendMessageToRoomCommand.getMessage() == null || sendMessageToRoomCommand.getMessage().isBlank() ||
@@ -349,7 +343,7 @@ public class CommandAPIController {
         else {
             messageBrokerAPI.sendMessageToGroup(username, sendMessageToRoomCommand.getRoomName(),
                     encryptionAPI.symmetricEncryptString(sendMessageToRoomCommand.getMessage()));
-            messageHistoryDatabaseAPI.saveMessageFromGroup(username, sendMessageToRoomCommand.getRoomName(),
+            persistentDataAPI.saveMessageFromGroup(username, sendMessageToRoomCommand.getRoomName(),
                     encryptionAPI.symmetricEncryptString(sendMessageToRoomCommand.getMessage()));
             return new OperationSucceedResponse(sendMessageToRoomCommand.getMessageId());
         }
@@ -364,7 +358,7 @@ public class CommandAPIController {
      */
     public BasicPackage handlerSendMessageToUserCommand(String username, SendMessageToUserCommand sendMessageToUserCommand) {
         logger.info("Received message from type SendMessageToUserCommand from: " + username);
-        if (sendMessageToUserCommand.getUsername() == null || !userAccountDatabaseAPI.checkUserExist(sendMessageToUserCommand.getUsername()))
+        if (sendMessageToUserCommand.getUsername() == null || !persistentDataAPI.checkUserExist(sendMessageToUserCommand.getUsername()))
             return new OperationFailResponse(sendMessageToUserCommand.getMessageId(), "Non-existent user");
 
         else if (sendMessageToUserCommand.getMessage() == null || sendMessageToUserCommand.getMessage().isBlank() ||

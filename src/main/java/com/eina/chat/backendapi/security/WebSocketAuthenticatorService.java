@@ -1,7 +1,7 @@
 package com.eina.chat.backendapi.security;
 
 import com.eina.chat.backendapi.service.EncryptionAPI;
-import com.eina.chat.backendapi.service.UserAccountDatabaseAPI;
+import com.eina.chat.backendapi.service.PersistentDataAPI;
 import lombok.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -15,10 +15,10 @@ import java.util.Collections;
 @Service
 public class WebSocketAuthenticatorService {
     /**
-     * User account database API
+     * Database API
      */
     @Autowired
-    private UserAccountDatabaseAPI userAccountDatabaseAPI;
+    private PersistentDataAPI persistentDataAPI;
 
     /**
      * Encryption API
@@ -27,12 +27,12 @@ public class WebSocketAuthenticatorService {
     private EncryptionAPI encryptionAPI;
 
     public UsernamePasswordAuthenticationToken getAuthenticationToken(@NonNull String username, @NonNull String password) throws AuthenticationException {
-        if (userAccountDatabaseAPI.checkUserCredentials(username, encryptionAPI.asymmetricEncryptString(password))) {
+        if (persistentDataAPI.checkUserCredentials(username, encryptionAPI.asymmetricEncryptString(password))) {
             // Null credentials
             return new UsernamePasswordAuthenticationToken(
                     username,
                     null,
-                    Collections.singleton((GrantedAuthority) () -> userAccountDatabaseAPI.getUserRole(username))
+                    Collections.singleton((GrantedAuthority) () -> persistentDataAPI.getUserRole(username))
             );
         } else
             throw new BadCredentialsException("Bad credentials for user " + username);
