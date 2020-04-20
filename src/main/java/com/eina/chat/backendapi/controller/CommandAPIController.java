@@ -2,10 +2,7 @@ package com.eina.chat.backendapi.controller;
 
 import com.eina.chat.backendapi.protocol.packages.*;
 import com.eina.chat.backendapi.protocol.packages.message.request.*;
-import com.eina.chat.backendapi.protocol.packages.message.response.FileFromRoomResponse;
-import com.eina.chat.backendapi.protocol.packages.message.response.FileFromUserResponse;
-import com.eina.chat.backendapi.protocol.packages.message.response.MessageFromRoomResponse;
-import com.eina.chat.backendapi.protocol.packages.message.response.MessageFromUserResponse;
+import com.eina.chat.backendapi.protocol.packages.message.response.*;
 import com.eina.chat.backendapi.protocol.packages.common.response.OperationSucceedResponse;
 import com.eina.chat.backendapi.protocol.packages.common.response.OperationFailResponse;
 import com.eina.chat.backendapi.rabbitmq.ReceiveHandler;
@@ -24,6 +21,7 @@ import org.springframework.web.socket.messaging.SessionSubscribeEvent;
 import org.springframework.web.socket.messaging.SessionUnsubscribeEvent;
 
 import java.security.Principal;
+import java.util.ArrayList;
 import java.util.List;
 
 @Controller
@@ -117,6 +115,21 @@ public class CommandAPIController {
 
         else if (basicPackage instanceof SendMessageToUserCommand)
             return handlerSendMessageToUserCommand(principal.getName(), (SendMessageToUserCommand) basicPackage);
+
+        else if (basicPackage instanceof GetAdministeredRoomsCommand)
+            return handlerGetAdministeredRoomsCommand(principal.getName(), (GetAdministeredRoomsCommand) basicPackage);
+
+        else if (basicPackage instanceof GetJoinedRoomsCommand)
+            return handlerGetJoinedRoomsCommand(principal.getName(), (GetJoinedRoomsCommand) basicPackage);
+
+        else if (basicPackage instanceof GetMessageHistoryFromRoomCommand)
+            return handlerGetMessageHistoryFromRoomCommand(principal.getName(), (GetMessageHistoryFromRoomCommand) basicPackage);
+
+        else if (basicPackage instanceof GetFileHistoryFromRoomCommand)
+            return handlerGetFileHistoryFromRoomCommand(principal.getName(), (GetFileHistoryFromRoomCommand) basicPackage);
+
+        else if (basicPackage instanceof GetAuthLevelCommand)
+            return handlerGetAuthLevelCommand(principal.getName(), (GetAuthLevelCommand) basicPackage);
 
         else return new OperationFailResponse(basicPackage.getMessageId(), "Unknown command");
     }
@@ -253,20 +266,6 @@ public class CommandAPIController {
         }
     }
 
-//     This call looks unnecessary, wait until client been implemented to delete
-//    /**
-//     * Handle messages received from user with content of type SearchUserCommand
-//     *
-//     * @param username          user username
-//     * @param searchUserCommand content
-//     * @return command response
-//     */
-//    public BasicPackage handlerSearchUserCommand(String username, SearchUserCommand searchUserCommand) {
-//        logger.info("Received message from type SearchUserCommand from: " + username);
-//
-//        return new OperationFailResponse(searchUserCommand.getMessageId(), "Unknown command");
-//    }
-
     /**
      * Handle messages received from user with content of type SendFileToRoomCommand
      *
@@ -380,8 +379,12 @@ public class CommandAPIController {
      * @param getAdministeredRoomsCommand content
      * @return command response
      */
-    public BasicPackage handlerGetAdministeredGroupsCommand(String username, GetAdministeredRoomsCommand getAdministeredRoomsCommand) {
-        // TODO:Implement
+    public BasicPackage handlerGetAdministeredRoomsCommand(String username, GetAdministeredRoomsCommand getAdministeredRoomsCommand) {
+        logger.info("Received message from type GetAdministeredRoomsCommand from: " + username);
+        // TODO: The next line should be async
+        simpMessagingTemplate.convertAndSendToUser(username, "/queue/message",
+                new AdministeredRoomsResponse(getAdministeredRoomsCommand.getMessageId(),
+                persistentDataAPI.getAllGroupsWhereIsAdmin(username)));
         return new OperationSucceedResponse(getAdministeredRoomsCommand.getMessageId());
     }
 
@@ -392,7 +395,8 @@ public class CommandAPIController {
      * @param getAuthLevelCommand content
      * @return command response
      */
-    public BasicPackage handlerGetAuthLevelCommandsCommand(String username, GetAuthLevelCommand getAuthLevelCommand) {
+    public BasicPackage handlerGetAuthLevelCommand(String username, GetAuthLevelCommand getAuthLevelCommand) {
+        logger.info("Received message from type GetAuthLevelCommand from: " + username);
         // TODO:Implement
         return new OperationSucceedResponse(getAuthLevelCommand.getMessageId());
     }
@@ -405,6 +409,7 @@ public class CommandAPIController {
      * @return command response
      */
     public BasicPackage handlerGetFileHistoryFromRoomCommand(String username, GetFileHistoryFromRoomCommand getFileHistoryFromRoomCommand) {
+        logger.info("Received message from type GetFileHistoryFromRoomCommand from: " + username);
         // TODO:Implement
         return new OperationSucceedResponse(getFileHistoryFromRoomCommand.getMessageId());
     }
@@ -417,6 +422,7 @@ public class CommandAPIController {
      * @return command response
      */
     public BasicPackage handlerGetJoinedRoomsCommand(String username, GetJoinedRoomsCommand getJoinedRoomsCommand) {
+        logger.info("Received message from type GetJoinedRoomsCommand from: " + username);
         // TODO:Implement
         return new OperationSucceedResponse(getJoinedRoomsCommand.getMessageId());
     }
@@ -429,6 +435,7 @@ public class CommandAPIController {
      * @return command response
      */
     public BasicPackage handlerGetMessageHistoryFromRoomCommand(String username, GetMessageHistoryFromRoomCommand getMessageHistoryFromRoomCommand) {
+        logger.info("Received message from type GetMessageHistoryFromRoomCommand from: " + username);
         // TODO:Implement
         return new OperationSucceedResponse(getMessageHistoryFromRoomCommand.getMessageId());
     }
