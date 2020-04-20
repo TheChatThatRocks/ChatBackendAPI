@@ -373,26 +373,65 @@ public class CommandAPIController {
         }
     }
 
-    public BasicPackage handlerGetAdministeredGroupsCommand(String username, SendMessageToUserCommand sendMessageToUserCommand) {
+    /**
+     * Handle messages received from user with content of type GetAdministeredRoomsCommand
+     *
+     * @param username                    user username
+     * @param getAdministeredRoomsCommand content
+     * @return command response
+     */
+    public BasicPackage handlerGetAdministeredGroupsCommand(String username, GetAdministeredRoomsCommand getAdministeredRoomsCommand) {
         // TODO:Implement
-        return new OperationSucceedResponse(sendMessageToUserCommand.getMessageId());
+        return new OperationSucceedResponse(getAdministeredRoomsCommand.getMessageId());
     }
 
-//    This call looks unnecessary, wait until client been implemented but divide it in two calls looks more appropriate
-//    /**
-//     * Handle messages received from user with content of type SendMessageToUserCommand
-//     *
-//     * @param username                      user username
-//     * @param joinedRoomsChatHistoryCommand content
-//     * @return command response
-//     */
-//    public BasicPackage handlerJoinedRoomsChatHistoryCommand(String username, JoinedRoomsChatHistoryCommand joinedRoomsChatHistoryCommand) {
-//        logger.info("Received message from type JoinedRoomsChatHistoryCommand from: " + username);
-//
-//        // getGroupsFromUser
-//        // getHistoryFromGroup
-//        return new OperationFailResponse(joinedRoomsChatHistoryCommand.getMessageId(), "Unknown command");
-//    }
+    /**
+     * Handle messages received from user with content of type GetAuthLevelCommand
+     *
+     * @param username            user username
+     * @param getAuthLevelCommand content
+     * @return command response
+     */
+    public BasicPackage handlerGetAuthLevelCommandsCommand(String username, GetAuthLevelCommand getAuthLevelCommand) {
+        // TODO:Implement
+        return new OperationSucceedResponse(getAuthLevelCommand.getMessageId());
+    }
+
+    /**
+     * Handle messages received from user with content of type GetFileHistoryFromRoomCommand
+     *
+     * @param username                      user username
+     * @param getFileHistoryFromRoomCommand content
+     * @return command response
+     */
+    public BasicPackage handlerGetFileHistoryFromRoomCommand(String username, GetFileHistoryFromRoomCommand getFileHistoryFromRoomCommand) {
+        // TODO:Implement
+        return new OperationSucceedResponse(getFileHistoryFromRoomCommand.getMessageId());
+    }
+
+    /**
+     * Handle messages received from user with content of type GetJoinedRoomsCommand
+     *
+     * @param username              user username
+     * @param getJoinedRoomsCommand content
+     * @return command response
+     */
+    public BasicPackage handlerGetJoinedRoomsCommand(String username, GetJoinedRoomsCommand getJoinedRoomsCommand) {
+        // TODO:Implement
+        return new OperationSucceedResponse(getJoinedRoomsCommand.getMessageId());
+    }
+
+    /**
+     * Handle messages received from user with content of type GetMessageHistoryFromRoomCommand
+     *
+     * @param username                         user username
+     * @param getMessageHistoryFromRoomCommand content
+     * @return command response
+     */
+    public BasicPackage handlerGetMessageHistoryFromRoomCommand(String username, GetMessageHistoryFromRoomCommand getMessageHistoryFromRoomCommand) {
+        // TODO:Implement
+        return new OperationSucceedResponse(getMessageHistoryFromRoomCommand.getMessageId());
+    }
 
     /**
      * Notify when user is subscribed to /user/queue/message
@@ -443,7 +482,7 @@ public class CommandAPIController {
 
                 @Override
                 public void onNotificationArrive(String content) {
-                    // TODO: Implement
+                    // TODO Improvement: Implement
                 }
 
             });

@@ -39,6 +39,11 @@ public class MessageBrokerAPITest {
         public void onGroupFileArrive(String username, String group, byte[] file) {
             fail("Group file received");
         }
+
+        @Override
+        public void onNotificationArrive(String content) {
+            fail("Notification received");
+        }
     }
 
     @BeforeEach
