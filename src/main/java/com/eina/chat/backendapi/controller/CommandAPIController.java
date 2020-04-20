@@ -7,6 +7,7 @@ import com.eina.chat.backendapi.protocol.packages.common.response.OperationSucce
 import com.eina.chat.backendapi.protocol.packages.common.response.OperationFailResponse;
 import com.eina.chat.backendapi.rabbitmq.ReceiveHandler;
 import com.eina.chat.backendapi.service.*;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,8 +22,10 @@ import org.springframework.web.socket.messaging.SessionSubscribeEvent;
 import org.springframework.web.socket.messaging.SessionUnsubscribeEvent;
 
 import java.security.Principal;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 @Controller
 public class CommandAPIController {
@@ -76,6 +79,12 @@ public class CommandAPIController {
 
     @Value("${app.min-room-length:}")
     private Integer minRoomLength;
+
+
+    /**
+     * Executor user for async tasks
+     */
+    ExecutorService executorService = Executors.newFixedThreadPool(10);
 
 
     /**
@@ -196,7 +205,7 @@ public class CommandAPIController {
         // Delete all groups where is admin and the associated messages
         List<String> administeredGroups = persistentDataAPI.getAllGroupsWhereIsAdmin(username);
         for (String group : administeredGroups) {
-            // TODO: Send message group members informing the deletion
+            // TODO Improvement: Send message group members informing the deletion
 
             // Delete associated broker
             messageBrokerAPI.deleteGroup(group);
@@ -219,7 +228,7 @@ public class CommandAPIController {
      * @return command response
      */
     public BasicPackage handlerDeleteRoomCommand(String username, DeleteRoomCommand deleteRoomCommand) {
-        // TODO: May notify all group member of the deletion
+        // TODO Notify: May notify all group member of the deletion
         logger.info("Received message from type DeleteRoomCommand from: " + username);
         if (deleteRoomCommand.getRoomName() == null ||
                 !persistentDataAPI.checkIfIsGroupAdmin(username, deleteRoomCommand.getRoomName()))
@@ -244,7 +253,7 @@ public class CommandAPIController {
      * @return command response
      */
     public BasicPackage handlerDeleteUserFromChatRoom(String username, RemoveUserFromChatRoom removeUserFromChatRoom) {
-        // TODO: May notify of the deletion
+        // TODO Improvement: May notify of the deletion
         logger.info("Received message from type DeleteUserFromChatRoom from: " + username);
         if (removeUserFromChatRoom.getRoomName() == null || removeUserFromChatRoom.getUsername() == null)
             return new OperationFailResponse(removeUserFromChatRoom.getMessageId(), "Non-existent user or room");
@@ -381,10 +390,9 @@ public class CommandAPIController {
      */
     public BasicPackage handlerGetAdministeredRoomsCommand(String username, GetAdministeredRoomsCommand getAdministeredRoomsCommand) {
         logger.info("Received message from type GetAdministeredRoomsCommand from: " + username);
-        // TODO: The next line should be async
-        simpMessagingTemplate.convertAndSendToUser(username, "/queue/message",
+        executorService.submit(() -> simpMessagingTemplate.convertAndSendToUser(username, "/queue/message",
                 new AdministeredRoomsResponse(getAdministeredRoomsCommand.getMessageId(),
-                persistentDataAPI.getAllGroupsWhereIsAdmin(username)));
+                        persistentDataAPI.getAllGroupsWhereIsAdmin(username))));
         return new OperationSucceedResponse(getAdministeredRoomsCommand.getMessageId());
     }
 
@@ -397,7 +405,9 @@ public class CommandAPIController {
      */
     public BasicPackage handlerGetAuthLevelCommand(String username, GetAuthLevelCommand getAuthLevelCommand) {
         logger.info("Received message from type GetAuthLevelCommand from: " + username);
-        // TODO:Implement
+        executorService.submit(() -> simpMessagingTemplate.convertAndSendToUser(username, "/queue/message",
+                new AuthLevelResponse(getAuthLevelCommand.getMessageId(),
+                        persistentDataAPI.getUserRole(username))));
         return new OperationSucceedResponse(getAuthLevelCommand.getMessageId());
     }
 
@@ -410,7 +420,15 @@ public class CommandAPIController {
      */
     public BasicPackage handlerGetFileHistoryFromRoomCommand(String username, GetFileHistoryFromRoomCommand getFileHistoryFromRoomCommand) {
         logger.info("Received message from type GetFileHistoryFromRoomCommand from: " + username);
-        // TODO:Implement
+        executorService.submit(() -> {
+            List<Pair<String, byte[]>> usersFiles = persistentDataAPI.getOrderedFilesFromGroup(getFileHistoryFromRoomCommand.getRoomName());
+            List<String> users = usersFiles.stream().map(Pair::getLeft).collect(Collectors.toList());
+            List<byte[]> files = usersFiles.stream().map(file -> encryptionAPI.symmetricDecryptFile(file.getRight()))
+                    .collect(Collectors.toList());
+            simpMessagingTemplate.convertAndSendToUser(username, "/queue/message",
+                    new FileHistoryFromRoomResponse(getFileHistoryFromRoomCommand.getMessageId(),
+                            getFileHistoryFromRoomCommand.getRoomName(), users, files));
+        });
         return new OperationSucceedResponse(getFileHistoryFromRoomCommand.getMessageId());
     }
 
@@ -423,7 +441,9 @@ public class CommandAPIController {
      */
     public BasicPackage handlerGetJoinedRoomsCommand(String username, GetJoinedRoomsCommand getJoinedRoomsCommand) {
         logger.info("Received message from type GetJoinedRoomsCommand from: " + username);
-        // TODO:Implement
+        executorService.submit(() -> simpMessagingTemplate.convertAndSendToUser(username, "/queue/message",
+                new JoinedRoomsResponse(getJoinedRoomsCommand.getMessageId(),
+                        persistentDataAPI.getAllGroupsWhereIsMember(username))));
         return new OperationSucceedResponse(getJoinedRoomsCommand.getMessageId());
     }
 
@@ -436,7 +456,15 @@ public class CommandAPIController {
      */
     public BasicPackage handlerGetMessageHistoryFromRoomCommand(String username, GetMessageHistoryFromRoomCommand getMessageHistoryFromRoomCommand) {
         logger.info("Received message from type GetMessageHistoryFromRoomCommand from: " + username);
-        // TODO:Implement
+        executorService.submit(() -> {
+            List<Pair<String, String>> usersFiles = persistentDataAPI.getOrderedMessagesFromGroup(getMessageHistoryFromRoomCommand.getRoomName());
+            List<String> users = usersFiles.stream().map(Pair::getLeft).collect(Collectors.toList());
+            List<String> messages = usersFiles.stream().map(message -> encryptionAPI.symmetricDecryptString(message.getRight()))
+                    .collect(Collectors.toList());
+            simpMessagingTemplate.convertAndSendToUser(username, "/queue/message",
+                    new MessageHistoryFromRoomResponse(getMessageHistoryFromRoomCommand.getMessageId(),
+                            getMessageHistoryFromRoomCommand.getRoomName(), users, messages));
+        });
         return new OperationSucceedResponse(getMessageHistoryFromRoomCommand.getMessageId());
     }
 
@@ -491,7 +519,6 @@ public class CommandAPIController {
                 public void onNotificationArrive(String content) {
                     // TODO Improvement: Implement
                 }
-
             });
         }
     }
