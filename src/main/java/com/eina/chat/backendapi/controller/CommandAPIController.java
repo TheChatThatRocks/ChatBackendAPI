@@ -373,6 +373,11 @@ public class CommandAPIController {
         }
     }
 
+    public BasicPackage handlerGetAdministeredGroupsCommand(String username, SendMessageToUserCommand sendMessageToUserCommand) {
+        // TODO:Implement
+        return new OperationSucceedResponse(sendMessageToUserCommand.getMessageId());
+    }
+
 //    This call looks unnecessary, wait until client been implemented but divide it in two calls looks more appropriate
 //    /**
 //     * Handle messages received from user with content of type SendMessageToUserCommand
@@ -434,6 +439,11 @@ public class CommandAPIController {
                     simpMessagingTemplate.convertAndSendToUser(username,
                             "/queue/message",
                             new FileFromRoomResponse(fromUsername, group, encryptionAPI.symmetricDecryptFile(file)));
+                }
+
+                @Override
+                public void onNotificationArrive(String content) {
+                    // TODO: Implement
                 }
 
             });
