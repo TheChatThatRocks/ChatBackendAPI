@@ -13,15 +13,22 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
         config.enableSimpleBroker(
-                // User
-                "/sign-up", // Send sign up
+                // All
                 "/queue/error/sign-up", // Sign up errors
-                "/message", // Send command to server
-                "/queue/message", // Receive server response
+                "/sign-up", // Send sign up
+
+                // Authenticated
+                "/queue/error/auth-level", // Auth level error
+                "/queue/auth-level", // Receive auth level response
+                "/auth-level", // Send auth level
+
+                // User
                 "/queue/error/message", // Send direct message errors
+                "/queue/message", // Receive server response
+                "/message", // Send command to server
+
                 // Admin
                 "/queue/error/admin", // Admin receive server errors
-                "/queue/topic/admin", // Admin receive server direct message
                 "/admin" // Send admin commands
         );
 
@@ -33,6 +40,5 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws")
                 .setAllowedOrigins("*");
-                //.withSockJS();
     }
 }

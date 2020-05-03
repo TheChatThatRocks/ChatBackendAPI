@@ -137,9 +137,6 @@ public class CommandAPIController {
         else if (basicPackage instanceof GetFileHistoryFromRoomCommand)
             return handlerGetFileHistoryFromRoomCommand(principal.getName(), (GetFileHistoryFromRoomCommand) basicPackage);
 
-        else if (basicPackage instanceof GetAuthLevelCommand)
-            return handlerGetAuthLevelCommand(principal.getName(), (GetAuthLevelCommand) basicPackage);
-
         else return new OperationFailResponse(basicPackage.getMessageId(), "Unknown command");
     }
 
@@ -394,21 +391,6 @@ public class CommandAPIController {
                 new AdministeredRoomsResponse(getAdministeredRoomsCommand.getMessageId(),
                         persistentDataAPI.getAllGroupsWhereIsAdmin(username))));
         return new OperationSucceedResponse(getAdministeredRoomsCommand.getMessageId());
-    }
-
-    /**
-     * Handle messages received from user with content of type GetAuthLevelCommand
-     *
-     * @param username            user username
-     * @param getAuthLevelCommand content
-     * @return command response
-     */
-    public BasicPackage handlerGetAuthLevelCommand(String username, GetAuthLevelCommand getAuthLevelCommand) {
-        logger.info("Received message from type GetAuthLevelCommand from: " + username);
-        executorService.submit(() -> simpMessagingTemplate.convertAndSendToUser(username, "/queue/message",
-                new AuthLevelResponse(getAuthLevelCommand.getMessageId(),
-                        persistentDataAPI.getUserRole(username))));
-        return new OperationSucceedResponse(getAuthLevelCommand.getMessageId());
     }
 
     /**

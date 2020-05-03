@@ -11,16 +11,25 @@ public class WebSocketAuthorizationSecurityConfig extends AbstractSecurityWebSoc
     protected void configureInbound(final MessageSecurityMetadataSourceRegistry messages) {
         // Authorization mapping
         messages.nullDestMatcher().permitAll()
-                // User
+                // All
                 .simpSubscribeDestMatchers("/user/queue/error/sign-up").permitAll()
+                .simpDestMatchers("/app/sign-up").permitAll()
+
+                // Authenticated
+                .simpSubscribeDestMatchers("/user/queue/error/auth-level").authenticated()
+                .simpSubscribeDestMatchers("/user/queue/auth-level").authenticated()
+                .simpDestMatchers("/app/auth-level").authenticated()
+
+                // User
                 .simpSubscribeDestMatchers("/user/queue/error/message").hasAuthority(AccessLevels.ROLE_USER)
                 .simpSubscribeDestMatchers("/user/queue/message").hasAuthority(AccessLevels.ROLE_USER)
-                .simpDestMatchers("/app/sign-up").permitAll()
                 .simpDestMatchers("/app/message").hasAuthority(AccessLevels.ROLE_USER)
+
                 // Admin
-                .simpSubscribeDestMatchers("/user/queue/topic/admin").hasAuthority(AccessLevels.ROLE_ADMIN)
                 .simpSubscribeDestMatchers("/user/queue/error/admin").hasAuthority(AccessLevels.ROLE_ADMIN)
                 .simpDestMatchers("/app/admin").hasAuthority(AccessLevels.ROLE_ADMIN)
+
+                // Other
                 .anyMessage().denyAll();
     }
 
