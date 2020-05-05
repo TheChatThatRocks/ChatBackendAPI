@@ -7,8 +7,8 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 @JsonTypeName(TypesOfMessage.CHECK_STATS)
 public class CheckStatsCommand extends BasicPackage {
 
-        @SuppressWarnings("unused")
-        public CheckStatsCommand() {
-            super();
-        }
+    @SuppressWarnings("unused")
+    public CheckStatsCommand() {
+        super();
+    }
 }

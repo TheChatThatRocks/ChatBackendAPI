@@ -16,16 +16,16 @@
                      filePattern="${sys:APP_LOG_ROOT}/application-%d{yyyy-MM-dd}-%i.log">
             <PatternLayout pattern="${LOG_PATTERN}"/>
             <Policies>
-                <SizeBasedTriggeringPolicy size="10KB" />
+                <SizeBasedTriggeringPolicy size="10KB"/>
             </Policies>
             <DefaultRolloverStrategy max="2"/>
         </RollingFile>
     </Appenders>
 
     <Loggers>
-        <AsyncLogger name="rabbit" additivity="false" level="debug">
-<!--            <AppenderRef ref="rabbitAPI" />-->
-            <AppenderRef ref="console"  />
+		<AsyncLogger name="rabbit" additivity="false" level="debug">
+            <!--            <AppenderRef ref="rabbitAPI" />-->
+            <AppenderRef ref="console"/>
         </AsyncLogger>
 
         <Root level="WARN">

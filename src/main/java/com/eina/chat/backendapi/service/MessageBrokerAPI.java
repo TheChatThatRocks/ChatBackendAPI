@@ -68,7 +68,7 @@ public class MessageBrokerAPI {
      */
     public void deleteUser(@NonNull String username) {
         // Disconnect and delete user
-        if(consumerListeners.getConsumer(username)!= null){
+        if (consumerListeners.getConsumer(username) != null) {
             deleteUserReceiverMessagesCallback(username);
         }
         rabbitAdmin.deleteQueue(username);
@@ -132,7 +132,7 @@ public class MessageBrokerAPI {
      */
     public void deleteUserReceiverMessagesCallback(@NonNull String username) {
         SimpleMessageListenerContainer listenerContainer = consumerListeners.getConsumer(username);
-        if (listenerContainer != null){
+        if (listenerContainer != null) {
             consumerListeners.getConsumer(username).stop();
             consumerListeners.deleteConsumer(username);
             logger.info("[" + username + "] Disconnecting...");

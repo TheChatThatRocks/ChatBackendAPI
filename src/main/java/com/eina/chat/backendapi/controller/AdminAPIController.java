@@ -86,7 +86,7 @@ public class AdminAPIController {
     /**
      * Handle messages received from admin with content of type SendMessageToAllCommand
      *
-     * @param sendMessageToAllCommand  content
+     * @param sendMessageToAllCommand content
      * @return command response
      */
     public BasicPackage handlerSendMessageToAllCommand(SendMessageToAllCommand sendMessageToAllCommand) {

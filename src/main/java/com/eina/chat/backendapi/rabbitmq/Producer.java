@@ -16,7 +16,8 @@ public class Producer {
     private Exchange topic;
 
 
-    public Producer(){ }
+    public Producer() {
+    }
 
     /***
      * Send message to the topic exchange
@@ -32,11 +33,12 @@ public class Producer {
 
     /**
      * Send file to the topic exchange
-     * @param key topic use it to bind the msg to a queue. Format: from.group.to.
-     *            For private msg group should be any and for group msg user is any.
+     *
+     * @param key  topic use it to bind the msg to a queue. Format: from.group.to.
+     *             For private msg group should be any and for group msg user is any.
      * @param file content of file
      */
-    public void sendFile(String key, byte[]  file) {
+    public void sendFile(String key, byte[] file) {
         MessageProperties msgProp = new MessageProperties();
         msgProp.setContentType("FILE");
         template.convertAndSend(topic.getName(), key, MessageBuilder.withBody(file).andProperties(msgProp).build());

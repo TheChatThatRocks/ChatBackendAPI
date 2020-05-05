@@ -32,18 +32,20 @@ public class MessageHistoryDatabaseAPI {
 
     /**
      * Get all messages saved from group in the same order they was inserted
+     *
      * @param groupName group name
      */
-    public List<Pair<String,String>> getOrderedMessagesFromGroup(String groupName){
+    public List<Pair<String, String>> getOrderedMessagesFromGroup(String groupName) {
         // TODO:
         return new ArrayList<>();
     }
 
     /**
      * Get all files saved from group in the same order they was inserted
+     *
      * @param groupName group name
      */
-    public List<Pair<String,byte[]>> getOrderedFilesFromGroup(String groupName){
+    public List<Pair<String, byte[]>> getOrderedFilesFromGroup(String groupName) {
         // TODO:
         return new ArrayList<>();
     }

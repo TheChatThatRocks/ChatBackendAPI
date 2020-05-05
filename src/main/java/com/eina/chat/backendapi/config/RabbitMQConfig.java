@@ -43,7 +43,7 @@ public class RabbitMQConfig {
 
 
     @Bean
-    public static Logger logger(){
+    public static Logger logger() {
         return LogManager.getLogger("rabbit");
     }
 
@@ -63,7 +63,7 @@ public class RabbitMQConfig {
 
     @Bean
     @Autowired
-    public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory, TopicExchange topicExchange){ //, MessageConverter messageConverter) {
+    public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory, TopicExchange topicExchange) { //, MessageConverter messageConverter) {
         RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
 //        rabbitTemplate.setMessageConverter(jsonMessageConverter());
         rabbitTemplate.setExchange(topicExchange.getName());
@@ -71,17 +71,17 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public MessageBrokerAPI brokerAPI(){
+    public MessageBrokerAPI brokerAPI() {
         return new MessageBrokerAPI();
     }
 
     @Bean
-    public ConsumersContainer consumerListeners(){
+    public ConsumersContainer consumerListeners() {
         return new ConsumersContainer();
     }
 
     @Bean
-    public Producer sender(){
+    public Producer sender() {
         return new Producer();
     }
 

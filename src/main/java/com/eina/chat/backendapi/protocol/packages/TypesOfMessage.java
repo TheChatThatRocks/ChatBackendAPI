@@ -1,5 +1,6 @@
 package com.eina.chat.backendapi.protocol.packages;
-public interface TypesOfMessage{
+
+public interface TypesOfMessage {
     String ADD_ACCOUNT = "ADD_ACCOUNT";
     String CREATE_ROOM = "CREATE_ROOM";
     String DELETE_ROOM = "DELETE_ROOM";
