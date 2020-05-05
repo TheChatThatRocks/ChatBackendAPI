@@ -7,7 +7,7 @@ import com.eina.chat.backendapi.protocol.packages.signup.request.AddAccountComma
 import com.eina.chat.backendapi.security.AccessLevels;
 import com.eina.chat.backendapi.service.EncryptionAPI;
 import com.eina.chat.backendapi.service.MessageBrokerAPI;
-import com.eina.chat.backendapi.service.UserAccountDatabaseAPI;
+import com.eina.chat.backendapi.service.PersistentDataAPI;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -17,10 +17,10 @@ import org.springframework.stereotype.Controller;
 @Controller
 public class SignUpController {
     /**
-     * User account database API
+     * Database API
      */
     @Autowired
-    private UserAccountDatabaseAPI userAccountDatabaseAPI;
+    private PersistentDataAPI persistentDataAPI;
 
     /**
      * Encryption API
@@ -68,13 +68,13 @@ public class SignUpController {
                         minUsernameLength + " and " + maxUsernameLength + " characters and password " +
                         "must have between " + minPasswordLength + " and " + maxPasswordLength + " characters");
 
-            else if (userAccountDatabaseAPI.checkUserExist(addAccountCommand.getUsername()))
+            else if (persistentDataAPI.checkUserExist(addAccountCommand.getUsername()))
                 return new OperationFailResponse(basicPackage.getMessageId(), "Username already exist");
 
             else {
 
                 // Create user in database
-                userAccountDatabaseAPI.createUser(addAccountCommand.getUsername(),
+                persistentDataAPI.createUser(addAccountCommand.getUsername(),
                         encryptionAPI.asymmetricEncryptString(addAccountCommand.getPassword()), AccessLevels.ROLE_USER);
 
                 // Create user in the broker

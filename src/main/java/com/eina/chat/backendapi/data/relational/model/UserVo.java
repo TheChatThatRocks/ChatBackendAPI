@@ -1,4 +1,4 @@
-package com.eina.chat.backendapi.model;
+package com.eina.chat.backendapi.data.relational.model;
 
 import javax.persistence.*;
 import java.util.ArrayList;

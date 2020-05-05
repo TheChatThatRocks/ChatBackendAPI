@@ -1,13 +1,10 @@
 package com.eina.chat.backendapi.service;
 
-import com.eina.chat.backendapi.protocol.packages.message.request.SendFileToUserCommand;
 import com.eina.chat.backendapi.rabbitmq.ReceiveHandler;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.util.Assert;
 
-import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
@@ -41,6 +38,11 @@ public class MessageBrokerAPITest {
         @Override
         public void onGroupFileArrive(String username, String group, byte[] file) {
             fail("Group file received");
+        }
+
+        @Override
+        public void onNotificationArrive(String content) {
+            fail("Notification received");
         }
     }
 

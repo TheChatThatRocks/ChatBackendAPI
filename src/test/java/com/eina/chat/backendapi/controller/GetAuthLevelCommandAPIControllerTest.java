@@ -4,6 +4,7 @@ import com.eina.chat.backendapi.protocol.packages.BasicPackage;
 import com.eina.chat.backendapi.protocol.packages.common.response.OperationFailResponse;
 import com.eina.chat.backendapi.protocol.packages.common.response.OperationSucceedResponse;
 import com.eina.chat.backendapi.protocol.packages.message.request.CreateRoomCommand;
+import com.eina.chat.backendapi.protocol.packages.message.request.GetAuthLevelCommand;
 import com.eina.chat.backendapi.security.AccessLevels;
 import com.eina.chat.backendapi.service.MessageBrokerAPI;
 import com.eina.chat.backendapi.service.PersistentDataAPI;
@@ -37,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-public class CreateChatRoomCommandAPIControllerTest {
+public class GetAuthLevelCommandAPIControllerTest {
     @LocalServerPort
     private int port;
 
@@ -48,7 +49,7 @@ public class CreateChatRoomCommandAPIControllerTest {
     private String backEndURI;
 
     // Logger
-    private static final Logger LOG = LoggerFactory.getLogger(CreateChatRoomCommandAPIControllerTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(GetAuthLevelCommandAPIControllerTest.class);
 
     // Database service
     @Autowired
@@ -61,8 +62,6 @@ public class CreateChatRoomCommandAPIControllerTest {
     // Variables
     final private String nameAdminUser = "testUser1";
     final private String passAdminUser = "test";
-
-    final private String roomName = "testroom";
 
     @BeforeEach
     public void setupForEach() {
@@ -83,9 +82,7 @@ public class CreateChatRoomCommandAPIControllerTest {
 
         // Create users in broker
         messageBrokerAPI.createUser(nameAdminUser);
-
-        // Delete room
-        messageBrokerAPI.deleteGroup(roomName);
+        
     }
 
     @AfterEach
@@ -95,14 +92,10 @@ public class CreateChatRoomCommandAPIControllerTest {
 
         // Delete users from broker
         messageBrokerAPI.deleteUser(nameAdminUser);
-
-        // Delete created room
-        persistentDataAPI.deleteGroup(roomName);
-        messageBrokerAPI.deleteGroup(roomName);
     }
 
     @Test
-    public void createChatRoomTest() throws Exception {
+    public void getUserAuthLevelTest() throws Exception {
         // Handle exceptions in threads
         final AtomicReference<Throwable> failure = new AtomicReference<>();
 
@@ -122,12 +115,10 @@ public class CreateChatRoomCommandAPIControllerTest {
         // Check if connection have failed
         assert (sessionUser1 != null && sessionUser1.isConnected());
 
-        // Subscribe to the channels and send message
-        // We have to receive 2 messages
         final CountDownLatch messagesToReceive = new CountDownLatch(1);
         final int sendMessageID = 4;
 
-        sessionUser1.subscribe("/user/queue/message", new StompFrameHandler() {
+        sessionUser1.subscribe("/user/queue/auth-level", new StompFrameHandler() {
             @Override
             public Type getPayloadType(StompHeaders headers) {
                 return BasicPackage.class;
@@ -135,14 +126,12 @@ public class CreateChatRoomCommandAPIControllerTest {
 
             @Override
             public void handleFrame(StompHeaders headers, Object payload) {
-                LOG.info("Message arrived: /user/queue/message User 1");
-
-                failure.set(new Exception("Message arrived to User"));
+                LOG.info("Message arrived: /user/queue/auth-level User 1");
             }
 
         });
 
-        sessionUser1.subscribe("/user/queue/error/message", new StompFrameHandler() {
+        sessionUser1.subscribe("/user/queue/error/auth-level", new StompFrameHandler() {
             @Override
             public Type getPayloadType(StompHeaders headers) {
                 return BasicPackage.class;
@@ -150,13 +139,13 @@ public class CreateChatRoomCommandAPIControllerTest {
 
             @Override
             public void handleFrame(StompHeaders headers, Object payload) {
-                LOG.info("Message arrived: /user/queue/error/message User 1");
+                LOG.info("Message arrived: /user/queue/error/auth-level User 1");
 
                 BasicPackage errorResponse = (BasicPackage) payload;
                 if (errorResponse.getMessageId() == sendMessageID && errorResponse instanceof OperationSucceedResponse)
                     messagesToReceive.countDown();
 
-                else if (errorResponse.getMessageId() == sendMessageID && errorResponse instanceof OperationFailResponse)
+                else if(errorResponse.getMessageId() == sendMessageID && errorResponse instanceof OperationFailResponse)
                     failure.set(new Exception(((OperationFailResponse) errorResponse).getDescription()));
 
                 else
@@ -167,7 +156,7 @@ public class CreateChatRoomCommandAPIControllerTest {
         // Allow subscriptions to set up
         Thread.sleep(1000);
 
-        sessionUser1.send("/app/message", new CreateRoomCommand(sendMessageID, roomName));
+        sessionUser1.send("/app/auth-level", new GetAuthLevelCommand(sendMessageID));
 
         boolean hasReceivedMessage = messagesToReceive.await(5, TimeUnit.SECONDS);
 
@@ -178,8 +167,5 @@ public class CreateChatRoomCommandAPIControllerTest {
         } else if (!hasReceivedMessage) {
             fail("Test wasn't completed");
         }
-
-        // Check if room have been created
-        assert (persistentDataAPI.checkIfIsGroupAdmin(nameAdminUser, roomName));
     }
 }

@@ -6,9 +6,8 @@ import com.eina.chat.backendapi.protocol.packages.message.request.SendMessageToU
 import com.eina.chat.backendapi.protocol.packages.message.response.MessageFromUserResponse;
 import com.eina.chat.backendapi.protocol.packages.common.response.OperationSucceedResponse;
 import com.eina.chat.backendapi.security.AccessLevels;
-import com.eina.chat.backendapi.service.GroupsManagementDatabaseAPI;
 import com.eina.chat.backendapi.service.MessageBrokerAPI;
-import com.eina.chat.backendapi.service.UserAccountDatabaseAPI;
+import com.eina.chat.backendapi.service.PersistentDataAPI;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,12 +48,9 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
     // Logger
     private static final Logger LOG = LoggerFactory.getLogger(SendMessageFromUserToUserCommandAPIControllerTest.class);
 
-    // User database service
+    // Database service
     @Autowired
-    private UserAccountDatabaseAPI userAccountDatabaseAPI;
-
-    @Autowired
-    private GroupsManagementDatabaseAPI groupsManagementDatabaseAPI;
+    private PersistentDataAPI persistentDataAPI;
 
     // RabbitMQ API
     @Autowired
@@ -74,15 +70,19 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
     @BeforeEach
     public void setupForEach() {
         // Delete users from all databases
-        userAccountDatabaseAPI.deleteUser(nameUser1);
-        userAccountDatabaseAPI.deleteUser(nameUser2);
+        persistentDataAPI.deleteUser(nameUser1);
+        persistentDataAPI.deleteUser(nameUser2);
 
         // Delete groups where are admin
+        List<String> groupsWereAdminUser1 = persistentDataAPI.getAllGroupsWhereIsAdmin(nameUser1);
+        for (String i : groupsWereAdminUser1){
         List<String> groupsWereAdminUser1 = groupsManagementDatabaseAPI.getAllGroupsWhereIsAdmin(nameUser1);
         for (String i : groupsWereAdminUser1) {
             messageBrokerAPI.deleteGroup(i);
         }
 
+        List<String> groupsWereAdminUser2 = persistentDataAPI.getAllGroupsWhereIsAdmin(nameUser1);
+        for (String i : groupsWereAdminUser2){
         List<String> groupsWereAdminUser2 = groupsManagementDatabaseAPI.getAllGroupsWhereIsAdmin(nameUser1);
         for (String i : groupsWereAdminUser2) {
             messageBrokerAPI.deleteGroup(i);
@@ -93,8 +93,8 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
         messageBrokerAPI.deleteUser(nameUser2);
 
         // Create users in database
-        userAccountDatabaseAPI.createUser(nameUser1, passUser1, AccessLevels.ROLE_USER);
-        userAccountDatabaseAPI.createUser(nameUser2, passUser2, AccessLevels.ROLE_USER);
+        persistentDataAPI.createUser(nameUser1, passUser1, AccessLevels.ROLE_USER);
+        persistentDataAPI.createUser(nameUser2, passUser2, AccessLevels.ROLE_USER);
 
         // Create users in broker
         messageBrokerAPI.createUser(nameUser1);
@@ -104,8 +104,8 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
     @AfterEach
     public void cleanForEach() {
         // Delete users from all databases
-        userAccountDatabaseAPI.deleteUser(nameUser1);
-        userAccountDatabaseAPI.deleteUser(nameUser2);
+        persistentDataAPI.deleteUser(nameUser1);
+        persistentDataAPI.deleteUser(nameUser2);
 
         // Delete users from broker
         messageBrokerAPI.deleteUser(nameUser1);

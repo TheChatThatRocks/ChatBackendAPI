@@ -34,4 +34,10 @@ public interface ReceiveHandler {
      * @param file     file sent
      */
     void onGroupFileArrive(String username, String group, byte[] file);
+
+    /**
+     * Callback for notification on notification arrive from user
+     * @param content notification content
+     */
+    void onNotificationArrive(String content);
 }

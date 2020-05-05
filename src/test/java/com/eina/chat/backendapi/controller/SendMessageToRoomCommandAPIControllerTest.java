@@ -3,12 +3,13 @@ package com.eina.chat.backendapi.controller;
 import com.eina.chat.backendapi.protocol.packages.BasicPackage;
 import com.eina.chat.backendapi.protocol.packages.common.response.OperationFailResponse;
 import com.eina.chat.backendapi.protocol.packages.common.response.OperationSucceedResponse;
+import com.eina.chat.backendapi.protocol.packages.message.request.GetMessageHistoryFromRoomCommand;
 import com.eina.chat.backendapi.protocol.packages.message.request.SendMessageToRoomCommand;
 import com.eina.chat.backendapi.protocol.packages.message.response.MessageFromRoomResponse;
+import com.eina.chat.backendapi.protocol.packages.message.response.MessageHistoryFromRoomResponse;
 import com.eina.chat.backendapi.security.AccessLevels;
-import com.eina.chat.backendapi.service.GroupsManagementDatabaseAPI;
 import com.eina.chat.backendapi.service.MessageBrokerAPI;
-import com.eina.chat.backendapi.service.UserAccountDatabaseAPI;
+import com.eina.chat.backendapi.service.PersistentDataAPI;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -52,12 +53,9 @@ public class SendMessageToRoomCommandAPIControllerTest {
     // Logger
     private static final Logger LOG = LoggerFactory.getLogger(SendMessageToRoomCommandAPIControllerTest.class);
 
-    // User database service
+    // Database service
     @Autowired
-    private UserAccountDatabaseAPI userAccountDatabaseAPI;
-
-    @Autowired
-    private GroupsManagementDatabaseAPI groupsManagementDatabaseAPI;
+    private PersistentDataAPI persistentDataAPI;
 
     // RabbitMQ API
     @Autowired
@@ -79,16 +77,16 @@ public class SendMessageToRoomCommandAPIControllerTest {
     @BeforeEach
     public void setupForEach() {
         // Delete users from all databases
-        userAccountDatabaseAPI.deleteUser(nameUser1);
-        userAccountDatabaseAPI.deleteUser(nameUser2);
+        persistentDataAPI.deleteUser(nameUser1);
+        persistentDataAPI.deleteUser(nameUser2);
 
         // Delete groups where are admin
-        List<String> groupsWereAdminUser1 = groupsManagementDatabaseAPI.getAllGroupsWhereIsAdmin(nameUser1);
+        List<String> groupsWereAdminUser1 = persistentDataAPI.getAllGroupsWhereIsAdmin(nameUser1);
         for (String i : groupsWereAdminUser1) {
             messageBrokerAPI.deleteGroup(i);
         }
 
-        List<String> groupsWereAdminUser2 = groupsManagementDatabaseAPI.getAllGroupsWhereIsAdmin(nameUser1);
+        List<String> groupsWereAdminUser2 = persistentDataAPI.getAllGroupsWhereIsAdmin(nameUser1);
         for (String i : groupsWereAdminUser2) {
             messageBrokerAPI.deleteGroup(i);
         }
@@ -98,37 +96,36 @@ public class SendMessageToRoomCommandAPIControllerTest {
         messageBrokerAPI.deleteUser(nameUser2);
 
         // Create users in database
-        userAccountDatabaseAPI.createUser(nameUser1, passUser1, AccessLevels.ROLE_USER);
-        userAccountDatabaseAPI.createUser(nameUser2, passUser2, AccessLevels.ROLE_USER);
+        persistentDataAPI.createUser(nameUser1, passUser1, AccessLevels.ROLE_USER);
+        persistentDataAPI.createUser(nameUser2, passUser2, AccessLevels.ROLE_USER);
 
         // Create users in broker
         messageBrokerAPI.createUser(nameUser1);
         messageBrokerAPI.createUser(nameUser2);
 
         // Create room
-        groupsManagementDatabaseAPI.createGroup(nameUser1, roomName);
+        persistentDataAPI.createGroup(nameUser1, roomName);
         messageBrokerAPI.addUserToGroup(nameUser1, roomName);
 
         // Add user to room
-        groupsManagementDatabaseAPI.addUserToGroup(nameUser2, roomName);
+        persistentDataAPI.addUserToGroup(nameUser2, roomName);
         messageBrokerAPI.addUserToGroup(nameUser2, roomName);
     }
 
     @AfterEach
     public void cleanForEach() {
         // Delete users from all databases
-        userAccountDatabaseAPI.deleteUser(nameUser1);
-        userAccountDatabaseAPI.deleteUser(nameUser2);
+        persistentDataAPI.deleteUser(nameUser1);
+        persistentDataAPI.deleteUser(nameUser2);
 
         // Delete users from broker
         messageBrokerAPI.deleteUser(nameUser1);
         messageBrokerAPI.deleteUser(nameUser2);
 
         // Delete created room
-        groupsManagementDatabaseAPI.deleteGroup(roomName);
+        persistentDataAPI.deleteGroup(roomName);
         messageBrokerAPI.deleteGroup(roomName);
     }
-
 
     @Test
     public void sendMessageFromToRoomBoothOnline() throws Exception {
@@ -397,6 +394,160 @@ public class SendMessageToRoomCommandAPIControllerTest {
             fail(failureUser2.get().getMessage());
         } else if (!hasReceivedMessage) {
             fail("Test wasn't completed User2");
+        }
+    }
+
+    @Test
+    public void sendMessageFromToRoomBoothOnlineReadHistory() throws Exception {
+        // Handle exceptions in threads
+        final AtomicReference<Throwable> failure = new AtomicReference<>();
+
+        WebSocketHttpHeaders headersUser1 = new WebSocketHttpHeaders();
+        WebSocketHttpHeaders headersUser2 = new WebSocketHttpHeaders();
+
+        StandardWebSocketClient standardWebSocketClientUser1 = new StandardWebSocketClient();
+        StandardWebSocketClient standardWebSocketClientUser2 = new StandardWebSocketClient();
+
+        WebSocketStompClient stompClientUser1 = new WebSocketStompClient(standardWebSocketClientUser1);
+        WebSocketStompClient stompClientUser2 = new WebSocketStompClient(standardWebSocketClientUser2);
+        stompClientUser1.setMessageConverter(new MappingJackson2MessageConverter());
+        stompClientUser2.setMessageConverter(new MappingJackson2MessageConverter());
+
+        StompHeaders connectHeadersUser1 = new StompHeaders();
+        connectHeadersUser1.add("username", nameUser1);
+        connectHeadersUser1.add("password", passUser1);
+
+        StompHeaders connectHeadersUser2 = new StompHeaders();
+        connectHeadersUser2.add("username", nameUser2);
+        connectHeadersUser2.add("password", passUser2);
+
+        // Connect
+        StompSession sessionUser1 = stompClientUser1.connect("ws://" + backEndURI + ":{port}/ws", headersUser1, connectHeadersUser1, new StompSessionHandlerAdapter() {
+        }, this.port).get(2, SECONDS);
+
+        StompSession sessionUser2 = stompClientUser2.connect("ws://" + backEndURI + ":{port}/ws", headersUser2, connectHeadersUser2, new StompSessionHandlerAdapter() {
+        }, this.port).get(2, SECONDS);
+
+        // Check if connection have failed
+        assert (sessionUser1 != null && sessionUser2 != null && sessionUser1.isConnected() && sessionUser2.isConnected());
+
+        // Subscribe to the channels and send message
+        // We have to receive 2 messages
+        final CountDownLatch messagesToReceive = new CountDownLatch(4);
+
+        sessionUser1.subscribe("/user/queue/message", new StompFrameHandler() {
+            @Override
+            public Type getPayloadType(StompHeaders headers) {
+                return BasicPackage.class;
+            }
+
+            @Override
+            public void handleFrame(StompHeaders headers, Object payload) {
+                if (payload instanceof MessageHistoryFromRoomResponse)
+                    LOG.info("Message arrived: /user/queue/message User 1 of type MessageHistoryFromRoomResponse");
+                else if(payload instanceof MessageFromRoomResponse)
+                    LOG.info("Message arrived: /user/queue/message User 1 of type MessageFromRoomResponse");
+                else
+                    LOG.info("Message arrived: /user/queue/message User 1 of unknown type");
+
+                if (payload instanceof MessageHistoryFromRoomResponse &&
+                        ((MessageHistoryFromRoomResponse) payload).getMessages().size() == 1) {
+                    messagesToReceive.countDown();
+                }
+            }
+        });
+
+
+        sessionUser2.subscribe("/user/queue/message", new StompFrameHandler() {
+            @Override
+            public Type getPayloadType(StompHeaders headers) {
+                return BasicPackage.class;
+            }
+
+            @Override
+            public void handleFrame(StompHeaders headers, Object payload) {
+                if (payload instanceof MessageHistoryFromRoomResponse)
+                    LOG.info("Message arrived: /user/queue/message User 2 of type MessageHistoryFromRoomResponse");
+                else if(payload instanceof MessageFromRoomResponse)
+                    LOG.info("Message arrived: /user/queue/message User 2 of type MessageFromRoomResponse");
+                else
+                    LOG.info("Message arrived: /user/queue/message User 2 of unknown type");
+
+                if (payload instanceof MessageFromRoomResponse &&
+                        ((MessageFromRoomResponse) payload).getMessage().equals(sendMessageContent) &&
+                        ((MessageFromRoomResponse) payload).getFromUser().equals(nameUser1) &&
+                        ((MessageFromRoomResponse) payload).getFromRoom().equals(roomName)) {
+                    messagesToReceive.countDown();
+                }
+            }
+        });
+
+        sessionUser1.subscribe("/user/queue/error/message", new StompFrameHandler() {
+            @Override
+            public Type getPayloadType(StompHeaders headers) {
+                return BasicPackage.class;
+            }
+
+            @Override
+            public void handleFrame(StompHeaders headers, Object payload) {
+                if (payload instanceof OperationSucceedResponse)
+                    LOG.info("Message arrived: /user/queue/error/message User 1 of type OperationSucceedResponse");
+                else if (payload instanceof OperationFailResponse)
+                    LOG.info("Message arrived: /user/queue/error/message User 1 of type OperationFailResponse");
+                else
+                    LOG.info("Message arrived: /user/queue/error/message User 1 of unknown type");
+
+                BasicPackage errorResponse = (BasicPackage) payload;
+                if (errorResponse.getMessageId() == sendMessageID && errorResponse instanceof OperationSucceedResponse)
+                    messagesToReceive.countDown();
+
+                else if (errorResponse.getMessageId() == sendMessageID && errorResponse instanceof OperationFailResponse)
+                    failure.set(new Exception(((OperationFailResponse) errorResponse).getDescription()));
+
+                else
+                    failure.set(new Exception("Message with bad content in User1 errors"));
+            }
+        });
+
+
+        sessionUser2.subscribe("/user/queue/error/message", new StompFrameHandler() {
+            @Override
+            public Type getPayloadType(StompHeaders headers) {
+                return BasicPackage.class;
+            }
+
+            @Override
+            public void handleFrame(StompHeaders headers, Object payload) {
+                if (payload instanceof OperationSucceedResponse)
+                    LOG.info("Message arrived: /user/queue/error/message User 2 of type OperationSucceedResponse");
+                else if (payload instanceof OperationFailResponse)
+                    LOG.info("Message arrived: /user/queue/error/message User 2 of type OperationFailResponse");
+                else
+                    LOG.info("Message arrived: /user/queue/error/message User 2 of unknown type");
+
+                failure.set(new Exception("Message in User2 errors"));
+            }
+        });
+
+        // Allow subscriptions to set up
+        Thread.sleep(1000);
+
+        sessionUser1.send("/app/message", new SendMessageToRoomCommand(sendMessageID, roomName, sendMessageContent));
+
+        Thread.sleep(1000);
+
+        // Request message history
+        sessionUser1.send("/app/message", new GetMessageHistoryFromRoomCommand(sendMessageID, roomName));
+
+        boolean hasReceivedMessage = messagesToReceive.await(5, TimeUnit.SECONDS);
+
+        sessionUser1.disconnect();
+        sessionUser2.disconnect();
+
+        if (failure.get() != null) {
+            fail(failure.get().getMessage());
+        } else if (!hasReceivedMessage) {
+            fail("Test wasn't completed");
         }
     }
 }
