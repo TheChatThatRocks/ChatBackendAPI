@@ -75,15 +75,11 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
 
         // Delete groups where are admin
         List<String> groupsWereAdminUser1 = persistentDataAPI.getAllGroupsWhereIsAdmin(nameUser1);
-        for (String i : groupsWereAdminUser1){
-        List<String> groupsWereAdminUser1 = groupsManagementDatabaseAPI.getAllGroupsWhereIsAdmin(nameUser1);
         for (String i : groupsWereAdminUser1) {
             messageBrokerAPI.deleteGroup(i);
         }
 
         List<String> groupsWereAdminUser2 = persistentDataAPI.getAllGroupsWhereIsAdmin(nameUser1);
-        for (String i : groupsWereAdminUser2){
-        List<String> groupsWereAdminUser2 = groupsManagementDatabaseAPI.getAllGroupsWhereIsAdmin(nameUser1);
         for (String i : groupsWereAdminUser2) {
             messageBrokerAPI.deleteGroup(i);
         }
