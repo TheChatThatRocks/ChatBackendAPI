@@ -17,22 +17,38 @@ import org.apache.logging.log4j.Logger;
 @Configuration
 public class RabbitMQConfig {
 
-    @Value("${spring.rabbitmq.addresses:amqp://localhost}")
-    private String amqpURL;
+//    @Value("${spring.rabbitmq.addresses:amqp://localhost}")
+//    private String amqpURL;
+//
+    @Value("${spring.rabbitmq.host}")
+    private String host;
+
+    @Value("${spring.rabbitmq.username}")
+    private String username;
+
+    @Value("${spring.rabbitmq.password}")
+    private String pass;
+
+    @Value("${spring.rabbitmq.port}")
+    private int port;
 
     @Bean
     public ConnectionFactory connectionFactory() {
         CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
         try {
-            connectionFactory.setUri(amqpURL);
+//            connectionFactory.setUri(amqpURL);
+            connectionFactory.setHost(host);
+            connectionFactory.setPort(port);
+            connectionFactory.setUsername(username);
+            connectionFactory.setPassword(pass);
             // TODO: ajustar canales, colas... según capacidades del cloud
             // connectionFactory.setChannelCacheSize(40);
             connectionFactory.setConnectionNameStrategy(connectionFactory1 -> "Chat-API");
         } catch (Exception e) {
-            System.out.println(" [*] AQMP broker not found in " + amqpURL);
+            System.out.println(" [*] AQMP broker not found in " + host);
             System.exit(-1);
         }
-        System.out.println(" [*] AQMP broker CONNECTED TO: " + amqpURL);
+        System.out.println(" [*] AQMP broker CONNECTED TO: " + host);
         return connectionFactory;
     }
 

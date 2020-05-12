@@ -57,6 +57,10 @@ dependencies {
 
     // Apache common lang
     implementation'org.apache.commons:commons-lang3:3.10'
+
+    // Monitoring
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'io.micrometer:micrometer-registry-prometheus'
 }
 
 test {

@@ -7,6 +7,8 @@ import com.eina.chat.backendapi.protocol.packages.common.response.OperationSucce
 import com.eina.chat.backendapi.protocol.packages.common.response.OperationFailResponse;
 import com.eina.chat.backendapi.rabbitmq.ReceiveHandler;
 import com.eina.chat.backendapi.service.*;
+import io.micrometer.core.annotation.Timed;
+import io.micrometer.core.instrument.Metrics;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +30,7 @@ import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 @Controller
+@Timed
 public class CommandAPIController {
     /**
      * Simple messaging template
@@ -297,6 +300,8 @@ public class CommandAPIController {
                     encryptionAPI.symmetricEncryptFile(sendFileToRoomCommand.getFile()));
             persistentDataAPI.saveFileToGroup(username, sendFileToRoomCommand.getRoomName(),
                     encryptionAPI.symmetricEncryptFile(sendFileToRoomCommand.getFile()));
+            Metrics.counter("message_sent", "type", "fileG", "from", username,
+                    "to", sendFileToRoomCommand.getRoomName()).increment();
             return new OperationSucceedResponse(sendFileToRoomCommand.getMessageId());
         }
     }
@@ -321,6 +326,8 @@ public class CommandAPIController {
         else {
             messageBrokerAPI.sendFileToUser(username, sendFileToUserCommand.getUsername(),
                     encryptionAPI.symmetricEncryptFile(sendFileToUserCommand.getFile()));
+            Metrics.counter("message_sent", "type", "fileU", "from", username,
+                    "to", sendFileToUserCommand.getUsername()).increment();
             return new OperationSucceedResponse(sendFileToUserCommand.getMessageId());
         }
     }
@@ -350,6 +357,8 @@ public class CommandAPIController {
                     encryptionAPI.symmetricEncryptString(sendMessageToRoomCommand.getMessage()));
             persistentDataAPI.saveMessageFromGroup(username, sendMessageToRoomCommand.getRoomName(),
                     encryptionAPI.symmetricEncryptString(sendMessageToRoomCommand.getMessage()));
+            Metrics.counter("message_sent", "type", "msgG", "from", username,
+                    "to", sendMessageToRoomCommand.getRoomName()).increment();
             return new OperationSucceedResponse(sendMessageToRoomCommand.getMessageId());
         }
     }
@@ -374,6 +383,8 @@ public class CommandAPIController {
         else {
             messageBrokerAPI.sendMessageToUser(username, sendMessageToUserCommand.getUsername(),
                     encryptionAPI.symmetricEncryptString(sendMessageToUserCommand.getMessage()));
+            Metrics.counter("message_sent", "type", "msgU", "from", username,
+                    "to", sendMessageToUserCommand.getUsername()).increment();
             return new OperationSucceedResponse(sendMessageToUserCommand.getMessageId());
         }
     }

@@ -35,4 +35,8 @@ public class SendFileToRoomCommand extends BasicPackage {
     public void setFile(byte[] file) {
         this.file = file;
     }
+
+    public int getSize(){
+        return file.length;
+    }
 }

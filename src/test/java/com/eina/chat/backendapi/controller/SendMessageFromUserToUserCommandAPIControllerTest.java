@@ -75,12 +75,12 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
 
         // Delete groups where are admin
         List<String> groupsWereAdminUser1 = persistentDataAPI.getAllGroupsWhereIsAdmin(nameUser1);
-        for (String i : groupsWereAdminUser1) {
+        for (String i : groupsWereAdminUser1){
             messageBrokerAPI.deleteGroup(i);
         }
 
         List<String> groupsWereAdminUser2 = persistentDataAPI.getAllGroupsWhereIsAdmin(nameUser1);
-        for (String i : groupsWereAdminUser2) {
+        for (String i : groupsWereAdminUser2){
             messageBrokerAPI.deleteGroup(i);
         }
 
@@ -197,7 +197,7 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
                 if (errorResponse.getMessageId() == sendMessageID && errorResponse instanceof OperationSucceedResponse)
                     messagesToReceive.countDown();
 
-                else if (errorResponse.getMessageId() == sendMessageID && errorResponse instanceof OperationFailResponse)
+                else if(errorResponse.getMessageId() == sendMessageID && errorResponse instanceof OperationFailResponse)
                     failure.set(new Exception(((OperationFailResponse) errorResponse).getDescription()));
 
                 else

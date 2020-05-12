@@ -36,4 +36,8 @@ public class SendMessageToUserCommand extends BasicPackage {
     public void setMessage(String message) {
         this.message = message;
     }
+
+    public int getSize(){
+        return message.length();
+    }
 }

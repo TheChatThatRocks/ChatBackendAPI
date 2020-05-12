@@ -175,7 +175,7 @@ public class MessageBrokerAPI {
      */
     public void sendFileToUser(String usernameUserFrom, String usernameUserTo, byte[] encryptedFile) {
         producer.sendFile(usernameUserFrom + ".any." + usernameUserTo, encryptedFile);
-        logger.info("[" + usernameUserFrom + "] Sent message to [" + usernameUserTo + "]: " +
+        logger.info("[" + usernameUserFrom + "] Sent file to [" + usernameUserTo + "]: " +
                 new String(encryptedFile, 0, min(encryptedFile.length, MAX_LEN_FILE_CONTENT_TO_LOG)) + "...");
     }
 
