@@ -411,6 +411,8 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
         // Check if connection have failed
         assert (sessionUser2 != null && sessionUser2.isConnected());
 
+        LOG.info("Subscribe user 2 to /user/queue/message");
+
         sessionUser2.subscribe("/user/queue/message", new StompFrameHandler() {
             @Override
             public Type getPayloadType(StompHeaders headers) {
@@ -423,6 +425,7 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
             }
         });
 
+        LOG.info("Subscribe user 2 to /user/queue/error/message");
         sessionUser2.subscribe("/user/queue/error/message", new StompFrameHandler() {
             @Override
             public Type getPayloadType(StompHeaders headers) {
@@ -438,6 +441,7 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
         // Allow subscriptions to set up
         Thread.sleep(1000);
 
+        LOG.info("Disconnect user 2");
         sessionUser2.disconnect();
 
         // Connect only User1 yet
@@ -452,6 +456,8 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
         final CountDownLatch messagesToReceiveUser1 = new CountDownLatch(1);
         final CountDownLatch messagesToReceiveUser2 = new CountDownLatch(1);
 
+        LOG.info("Subscribe user 1 to /user/queue/message");
+
         sessionUser1.subscribe("/user/queue/message", new StompFrameHandler() {
             @Override
             public Type getPayloadType(StompHeaders headers) {
@@ -465,6 +471,8 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
                 failureUser1.set(new Exception("Message arrived to User1"));
             }
         });
+
+        LOG.info("Subscribe user 1 to /user/queue/error/message");
 
         sessionUser1.subscribe("/user/queue/error/message", new StompFrameHandler() {
             @Override
@@ -498,6 +506,8 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
             fail("Test wasn't completed User1");
         }
 
+        LOG.info("Disconnect user 1");
+
         // Connect only User1 yet
         sessionUser1.disconnect();
 
@@ -507,6 +517,8 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
 
         // Check if connection have failed
         assert (sessionUser2 != null && sessionUser2.isConnected());
+
+        LOG.info("Subscribe user 2 to /user/queue/message");
 
         sessionUser2.subscribe("/user/queue/message", new StompFrameHandler() {
             @Override
@@ -528,6 +540,8 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
             }
         });
 
+        LOG.info("Subscribe user 2 to /user/queue/error/message");
+
         sessionUser2.subscribe("/user/queue/error/message", new StompFrameHandler() {
             @Override
             public Type getPayloadType(StompHeaders headers) {
@@ -546,6 +560,8 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
         Thread.sleep(1000);
 
         boolean hasReceivedMessage = messagesToReceiveUser2.await(5, TimeUnit.SECONDS);
+
+        LOG.info("Disconnect user 2");
 
         sessionUser2.disconnect();
 

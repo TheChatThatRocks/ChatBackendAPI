@@ -20,6 +20,7 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 import org.springframework.web.socket.messaging.SessionSubscribeEvent;
 import org.springframework.web.socket.messaging.SessionUnsubscribeEvent;
 
@@ -462,7 +463,7 @@ public class CommandAPIController {
     }
 
     /**
-     * Notify when user is subscribed to /user/queue/message
+     * Notify when user is subscribed to any channel
      */
     @EventListener
     public void handleSessionSubscribeEvent(SessionSubscribeEvent event) {
@@ -517,7 +518,7 @@ public class CommandAPIController {
     }
 
     /**
-     * Notify when user is unsubscribed to /user/queue/message
+     * Notify when user is unsubscribed to any channel
      */
     @EventListener
     public void handleSessionUnsubscribeEvent(SessionUnsubscribeEvent event) {
@@ -531,6 +532,22 @@ public class CommandAPIController {
 
         // Unsubscription
         if (simpDestination.equals("/user/queue/message") && !username.isBlank()) {
+            messageBrokerAPI.deleteUserReceiverMessagesCallback(username);
+        }
+    }
+
+    /**
+     * Notify when user is disconnected
+     */
+    @EventListener
+    public void handleSessionDisconnectEvent(SessionDisconnectEvent event) {
+        String username = event.getUser() != null ? event.getUser().getName() : "";
+
+        // Log
+        logger.info("Session Disconnect Event by user: " + username);
+
+        // Unsubscription from RabbitMQ
+        if (!username.isBlank()) {
             messageBrokerAPI.deleteUserReceiverMessagesCallback(username);
         }
     }
