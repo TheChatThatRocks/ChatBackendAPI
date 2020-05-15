@@ -18,7 +18,6 @@ sudo docker pull rabbitmq:3.8.3-management
 sudo docker pull prom/prometheus:2.17.2
 
 
-
 # Run all docker images
 ## Run PostgresSQL in foreground (-d for background) with username as "postgres", password as "easypassword", database name as "postgres" and port as "15432" 
 sudo docker run -d --rm --name my-postgres-docker -e POSTGRES_PASSWORD=easypassword -p 15432:5432 postgres:12.2

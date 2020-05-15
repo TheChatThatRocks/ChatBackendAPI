@@ -12,21 +12,21 @@
             <PatternLayout pattern="${LOG_PATTERN}"/>
         </Console>
 
-        <RollingFile name="rabbitAPI" fileName="${sys:APP_LOG_ROOT}/rabbit.log"
-                     filePattern="${sys:APP_LOG_ROOT}/application-%d{yyyy-MM-dd}-%i.log">
-            <PatternLayout pattern="${LOG_PATTERN}"/>
-            <Policies>
-                <SizeBasedTriggeringPolicy size="10KB"/>
-            </Policies>
-            <DefaultRolloverStrategy max="2"/>
-        </RollingFile>
+<!--        <RollingFile name="rabbitAPI" fileName="${sys:APP_LOG_ROOT}/rabbit.log"-->
+<!--                     filePattern="${sys:APP_LOG_ROOT}/application-%d{yyyy-MM-dd}-%i.log">-->
+<!--            <PatternLayout pattern="${LOG_PATTERN}"/>-->
+<!--            <Policies>-->
+<!--                <SizeBasedTriggeringPolicy size="10KB"/>-->
+<!--            </Policies>-->
+<!--            <DefaultRolloverStrategy max="2"/>-->
+<!--        </RollingFile>-->
     </Appenders>
 
     <Loggers>
-		<AsyncLogger name="rabbit" additivity="false" level="debug">
-            <!--            <AppenderRef ref="rabbitAPI" />-->
-            <AppenderRef ref="console"/>
-        </AsyncLogger>
+<!--		<AsyncLogger name="rabbit" additivity="false" level="debug">-->
+<!--            &lt;!&ndash;            <AppenderRef ref="rabbitAPI" />&ndash;&gt;-->
+<!--            <AppenderRef ref="console"/>-->
+<!--        </AsyncLogger>-->
 
         <Root level="WARN">
             <AppenderRef ref="console"/>
