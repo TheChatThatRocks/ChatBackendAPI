@@ -16,9 +16,9 @@ configurations {
     compileOnly {
         extendsFrom annotationProcessor
     }
-    all {
-        exclude group: 'org.springframework.boot', module: 'spring-boot-starter-logging'
-    }
+//    all {
+//        exclude group: 'org.springframework.boot', module: 'spring-boot-starter-logging'
+//    }
 }
 
 repositories {
@@ -28,12 +28,13 @@ repositories {
 
 dependencies {
     // Spring
+    implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-amqp'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.security:spring-security-messaging'
     implementation 'org.springframework.boot:spring-boot-starter-websocket'
-    implementation 'org.springframework.boot:spring-boot-starter-log4j2'
-    implementation 'com.lmax:disruptor:3.3.6'
+//    implementation 'org.springframework.boot:spring-boot-starter-log4j2'
+//    implementation 'com.lmax:disruptor:3.3.6'
 
     testImplementation 'org.springframework.amqp:spring-rabbit-test'
 

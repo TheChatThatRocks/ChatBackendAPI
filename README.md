@@ -41,6 +41,11 @@ sudo docker run -d --rm --name grafana --name=grafana -p 3000:3000 grafana/grafa
 
 ```
 
+## Development
+For development in the local machine run with:
+```
+-Dspring.profiles.active=local
+```
 
 ## Métricas
  
