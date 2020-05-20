@@ -8,14 +8,15 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=easypassword
 
-#  mongodb-database:
-#    image: mongo:4.2.5
-#    ports:
-#      - "27017:27017"
-#    environment:
-#      - MONGO_INITDB_ROOT_USERNAME=mongoadmin
-#      - MONGO_INITDB_ROOT_PASSWORD=easypassword
-#      - MONGO_INITDB_DATABASE=mymongodb
+# Uncomment for local deploy if MongoAtlas is down
+  mongodb-database:
+    image: mongo:4.2.5
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=mongoadmin
+      - MONGO_INITDB_ROOT_PASSWORD=easypassword
+      - MONGO_INITDB_DATABASE=mymongodb
 
   grafana-dashboard:
     image: grafana/grafana:7.0.0-beta3
@@ -37,3 +38,7 @@ services:
     build: backendAPI
     ports:
       - "8080:8080"
+  encryption:
+    build: encryption
+    ports:
+      - "7799:7799"

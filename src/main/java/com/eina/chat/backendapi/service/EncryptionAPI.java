@@ -1,9 +1,24 @@
 package com.eina.chat.backendapi.service;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 @Service
 public class EncryptionAPI {
+
+    private RestTemplate restTemplate = new RestTemplate();
+
+    @Value("${spring.encryption.url}")
+    String url;
+
+
+    @Value("${spring.encryption.port}")
+    String port;
     /**
      * Encrypt with symmetric cipher
      *
@@ -11,7 +26,10 @@ public class EncryptionAPI {
      * @return encrypted object
      */
     public String symmetricEncryptString(String toEncrypt) {
-        // TODO:
+//        HttpHeaders headers = new HttpHeaders();
+//        headers.setContentType(MediaType.TEXT_PLAIN);
+//        HttpEntity<String> request = new HttpEntity<>(toEncrypt, headers);
+//         restTemplate.exchange(url, HttpMethod.POST, request, String.class);
         return toEncrypt;
     }
 
