@@ -2,8 +2,7 @@ FROM openjdk:14-jdk-alpine
 RUN addgroup -S chat && adduser -S chat -G chat
 USER chat:chat
 
-EXPOSE 7799:7799
-
+EXPOSE $PORT:8080
 # Load data by layer, samll changes are deployed faster
 ARG DEPENDENCY=dependency
 COPY ${DEPENDENCY}/BOOT-INF/lib app/lib

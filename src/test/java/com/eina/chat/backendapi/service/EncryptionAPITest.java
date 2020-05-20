@@ -16,33 +16,36 @@ public class EncryptionAPITest {
     public void symmetricEncryptionMsg() {
 
         String msg = "testMsgSYM";
-//        String encrypted = encryptionAPI.symmetricEncryptString(msg);
-//        String decrypted = encryptionAPI.symmetricDecryptString(encrypted);
-//        assert msg.equals(decrypted);
+        String encrypted = encryptionAPI.symmetricEncryptString(msg);
+        System.out.println("MSG encrypted: " + encrypted);
+        String decrypted = encryptionAPI.symmetricDecryptString(encrypted);
+        System.out.println("MSG decrypted: " + decrypted);
+        assert !encrypted.equals(decrypted);
+        assert msg.equals(decrypted);
     }
 
     @Test
     public void asymmetricEncryptionMsg() {
-        String msg = "testMsgASYM";
+        //TODO: test asymetric
+//        String msg = "testMsgASYM";
 //        String encrypted = encryptionAPI.asymmetricEncryptString(msg);
-//        String decrypted = encryptionAPI.asymmetricEncryptString(encrypted);
+//        System.out.println("MSG encrypted: " + encrypted);
+//        String decrypted = encryptionAPI.symmetricDecryptString(encrypted);
+//        System.out.println("MSG decrypted: " + decrypted);
+//        assert !encrypted.equals(decrypted);
 //        assert msg.equals(decrypted);
     }
 
     @Test
     public void symmetricEncryptionFile() {
 
-        byte[] msg = ("testMsgSYM").getBytes();
-//        byte[] encrypted = encryptionAPI.symmetricEncryptFile(msg);
-//        byte[] decrypted = encryptionAPI.symmetricDecryptFile(encrypted);
-//        assert new String(msg).equals(new String(decrypted));
+        byte[] msg = ("testFILESYM").getBytes();
+        byte[] encrypted = encryptionAPI.symmetricEncryptFile(msg);
+        System.out.println("MSG encrypted: " + new String(encrypted));
+        String decrypted = new String(encryptionAPI.symmetricDecryptFile(encrypted));
+        System.out.println("MSG decrypted: " + decrypted);
+        assert !new String(encrypted).equals(decrypted);
+        assert new String(msg).equals(decrypted);
     }
 
-    @Test
-    public void asymmetricEncryptionFile() {
-        byte[] msg = ("testMsgASYM").getBytes();
-//        String encrypted = encryptionAPI.asymmetricEncryptFile(msg);
-//        String decrypted = encryptionAPI.asymmetricEncryptFile(encrypted);
-//        assert new String(msg).equals(new String(decrypted));
-    }
 }

@@ -13,5 +13,4 @@ ARG DEPENDENCY=dependency
 COPY ${DEPENDENCY}/BOOT-INF/lib app/lib
 COPY ${DEPENDENCY}/META-INF app/META-INF
 COPY ${DEPENDENCY}/BOOT-INF/classes app/classes
-ENTRYPOINT ["java","-cp", "app:app/lib/*:app/classes/", "-Dspring.profiles.active=devDocker", "com.eina.chat.backendapi.BackEndApiApplication"]
-#ENTRYPOINT ["java","-cp", "app:app/lib/*:app/classes/", "-Dspring.profiles.active=prod", "com.eina.chat.backendapi.BackEndApiApplication"]
+ENTRYPOINT ["java","-cp", "app:app/lib/*:app/classes/", "-Dspring.profiles.active=localDocker", "com.eina.chat.backendapi.BackEndApiApplication"]

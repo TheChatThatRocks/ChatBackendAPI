@@ -46,12 +46,13 @@ import static org.aspectj.bridge.MessageUtil.fail;
 @SpringBootApplication
 public class BackEndApiApplication {
 
-    @Bean
-    public CommandLineRunner commandLineRunner(ApplicationContext ctx) {
-        return args -> {
-            System.out.println("PORT: " + System.getenv("PORT"));
-        };
-    }
+//    @Bean
+//    public CommandLineRunner commandLineRunner(ApplicationContext ctx) {
+//        return args -> {
+//            System.out.println("HOLAAAAAAa");
+//            System.out.println("PORT: " + System.getenv("PORT"));
+//        };
+//    }
 
     public static void main(String[] args) {
         SpringApplication.run(BackEndApiApplication.class, args);

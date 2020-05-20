@@ -7,5 +7,6 @@ EXPOSE 15672
 EXPOSE 5672
 # Monitoring port
 EXPOSE 15692
+
 # Enable prometheus endpoint on docker
 RUN rabbitmq-plugins enable --offline rabbitmq_prometheus

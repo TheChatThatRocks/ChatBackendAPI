@@ -6,6 +6,8 @@ USER chat:chat
 #COPY ${JAR_FILE} chatAPI.jar
 #ENTRYPOINT ["java","-jar","chatAPI.jar"]
 
+EXPOSE $PORT:8080
+
 # Load data by layer, samll changes are deployed faster
 ARG DEPENDENCY=dependency
 COPY ${DEPENDENCY}/BOOT-INF/lib app/lib

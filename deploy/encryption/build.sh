@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PROJECT_DIR="../../../encryption/"
+PROJECT_DIR="../../../ChatEncryptionAPI/"
 mkdir -p dependency
 # Compile project and copy it to dependecy folder for deploy
 (cd ${PROJECT_DIR} && ./gradlew -x test build)
