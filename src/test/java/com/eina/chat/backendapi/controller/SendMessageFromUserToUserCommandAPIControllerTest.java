@@ -75,12 +75,12 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
 
         // Delete groups where are admin
         List<String> groupsWereAdminUser1 = persistentDataAPI.getAllGroupsWhereIsAdmin(nameUser1);
-        for (String i : groupsWereAdminUser1){
+        for (String i : groupsWereAdminUser1) {
             messageBrokerAPI.deleteGroup(i);
         }
 
         List<String> groupsWereAdminUser2 = persistentDataAPI.getAllGroupsWhereIsAdmin(nameUser1);
-        for (String i : groupsWereAdminUser2){
+        for (String i : groupsWereAdminUser2) {
             messageBrokerAPI.deleteGroup(i);
         }
 
@@ -197,7 +197,7 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
                 if (errorResponse.getMessageId() == sendMessageID && errorResponse instanceof OperationSucceedResponse)
                     messagesToReceive.countDown();
 
-                else if(errorResponse.getMessageId() == sendMessageID && errorResponse instanceof OperationFailResponse)
+                else if (errorResponse.getMessageId() == sendMessageID && errorResponse instanceof OperationFailResponse)
                     failure.set(new Exception(((OperationFailResponse) errorResponse).getDescription()));
 
                 else
@@ -375,6 +375,346 @@ public class SendMessageFromUserToUserCommandAPIControllerTest {
             fail(failureUser2.get().getMessage());
         } else if (!hasReceivedMessage) {
             fail("Test wasn't completed User2");
+        }
+    }
+
+    @Test
+    public void sendMessageFromUserToUserOneOfflineIssue49() throws Exception {
+        // https://github.com/TheChatThatRocks/ChatBackendAPI/issues/49
+        // Handle exceptions in threads
+        final AtomicReference<Throwable> failureUser1 = new AtomicReference<>();
+        final AtomicReference<Throwable> failureUser2 = new AtomicReference<>();
+
+        WebSocketHttpHeaders headersUser1 = new WebSocketHttpHeaders();
+        WebSocketHttpHeaders headersUser2 = new WebSocketHttpHeaders();
+
+        StandardWebSocketClient standardWebSocketClientUser1 = new StandardWebSocketClient();
+        StandardWebSocketClient standardWebSocketClientUser2 = new StandardWebSocketClient();
+
+        WebSocketStompClient stompClientUser1 = new WebSocketStompClient(standardWebSocketClientUser1);
+        WebSocketStompClient stompClientUser2 = new WebSocketStompClient(standardWebSocketClientUser2);
+        stompClientUser1.setMessageConverter(new MappingJackson2MessageConverter());
+        stompClientUser2.setMessageConverter(new MappingJackson2MessageConverter());
+
+        StompHeaders connectHeadersUser1 = new StompHeaders();
+        connectHeadersUser1.add("username", nameUser1);
+        connectHeadersUser1.add("password", passUser1);
+
+        StompHeaders connectHeadersUser2 = new StompHeaders();
+        connectHeadersUser2.add("username", nameUser2);
+        connectHeadersUser2.add("password", passUser2);
+
+        // First connect and disconnect User2
+        StompSession sessionUser2 = stompClientUser2.connect("ws://" + backEndURI + ":{port}/ws", headersUser2, connectHeadersUser2, new StompSessionHandlerAdapter() {
+        }, this.port).get(2, SECONDS);
+
+        // Check if connection have failed
+        assert (sessionUser2 != null && sessionUser2.isConnected());
+
+        LOG.info("Subscribe user 2 to /user/queue/message");
+
+        sessionUser2.subscribe("/user/queue/message", new StompFrameHandler() {
+            @Override
+            public Type getPayloadType(StompHeaders headers) {
+                return BasicPackage.class;
+            }
+
+            @Override
+            public void handleFrame(StompHeaders headers, Object payload) {
+                LOG.info("Message arrived: /user/queue/message User 2 first pass");
+            }
+        });
+
+        LOG.info("Subscribe user 2 to /user/queue/error/message");
+        sessionUser2.subscribe("/user/queue/error/message", new StompFrameHandler() {
+            @Override
+            public Type getPayloadType(StompHeaders headers) {
+                return BasicPackage.class;
+            }
+
+            @Override
+            public void handleFrame(StompHeaders headers, Object payload) {
+                LOG.info("Message arrived: /user/queue/error/message User 2 first pass");
+            }
+        });
+
+        // Allow subscriptions to set up
+        Thread.sleep(1000);
+
+        LOG.info("Disconnect user 2");
+        sessionUser2.disconnect();
+
+        // Connect only User1 yet
+        StompSession sessionUser1 = stompClientUser1.connect("ws://" + backEndURI + ":{port}/ws", headersUser1, connectHeadersUser1, new StompSessionHandlerAdapter() {
+        }, this.port).get(2, SECONDS);
+
+        // Check if connection have failed
+        assert (sessionUser1 != null && sessionUser1.isConnected());
+
+        // Subscribe to the channels and send message
+        // We have to receive 2 messages
+        final CountDownLatch messagesToReceiveUser1 = new CountDownLatch(1);
+        final CountDownLatch messagesToReceiveUser2 = new CountDownLatch(1);
+
+        LOG.info("Subscribe user 1 to /user/queue/message");
+
+        sessionUser1.subscribe("/user/queue/message", new StompFrameHandler() {
+            @Override
+            public Type getPayloadType(StompHeaders headers) {
+                return BasicPackage.class;
+            }
+
+            @Override
+            public void handleFrame(StompHeaders headers, Object payload) {
+                LOG.info("Message arrived: /user/queue/message User 1");
+
+                failureUser1.set(new Exception("Message arrived to User1"));
+            }
+        });
+
+        LOG.info("Subscribe user 1 to /user/queue/error/message");
+
+        sessionUser1.subscribe("/user/queue/error/message", new StompFrameHandler() {
+            @Override
+            public Type getPayloadType(StompHeaders headers) {
+                return BasicPackage.class;
+            }
+
+            @Override
+            public void handleFrame(StompHeaders headers, Object payload) {
+                LOG.info("Message arrived: /user/queue/error/message User 1");
+
+                BasicPackage errorResponse = (BasicPackage) payload;
+                if (errorResponse.getMessageId() == sendMessageID && errorResponse instanceof OperationSucceedResponse)
+                    messagesToReceiveUser1.countDown();
+                else
+                    failureUser1.set(new Exception("Message with bad content in User1 errors"));
+            }
+        });
+
+        // Allow subscriptions to set up
+        Thread.sleep(1000);
+
+        sessionUser1.send("/app/message", new SendMessageToUserCommand(sendMessageID, nameUser2, sendMessageContent));
+
+        // Check if User1 received ACK
+        boolean hasReceivedMessageUser1 = messagesToReceiveUser1.await(5, TimeUnit.SECONDS);
+
+        if (failureUser1.get() != null) {
+            fail(failureUser1.get().getMessage());
+        } else if (!hasReceivedMessageUser1) {
+            fail("Test wasn't completed User1");
+        }
+
+        LOG.info("Disconnect user 1");
+
+        // Connect only User1 yet
+        sessionUser1.disconnect();
+
+        // Now connect to User2
+        sessionUser2 = stompClientUser2.connect("ws://" + backEndURI + ":{port}/ws", headersUser2, connectHeadersUser2, new StompSessionHandlerAdapter() {
+        }, this.port).get(2, SECONDS);
+
+        // Check if connection have failed
+        assert (sessionUser2 != null && sessionUser2.isConnected());
+
+        LOG.info("Subscribe user 2 to /user/queue/message");
+
+        sessionUser2.subscribe("/user/queue/message", new StompFrameHandler() {
+            @Override
+            public Type getPayloadType(StompHeaders headers) {
+                return BasicPackage.class;
+            }
+
+            @Override
+            public void handleFrame(StompHeaders headers, Object payload) {
+                LOG.info("Message arrived: /user/queue/message User 2");
+
+                if (payload instanceof MessageFromUserResponse &&
+                        ((MessageFromUserResponse) payload).getMessage().equals(sendMessageContent) &&
+                        ((MessageFromUserResponse) payload).getFrom().equals(nameUser1)) {
+                    messagesToReceiveUser2.countDown();
+                } else {
+                    failureUser2.set(new Exception("Message with bad content in User2"));
+                }
+            }
+        });
+
+        LOG.info("Subscribe user 2 to /user/queue/error/message");
+
+        sessionUser2.subscribe("/user/queue/error/message", new StompFrameHandler() {
+            @Override
+            public Type getPayloadType(StompHeaders headers) {
+                return BasicPackage.class;
+            }
+
+            @Override
+            public void handleFrame(StompHeaders headers, Object payload) {
+                LOG.info("Message arrived: /user/queue/error/message User 2");
+
+                failureUser2.set(new Exception("Message in User2 errors"));
+            }
+        });
+
+        // Allow subscriptions to set up
+        Thread.sleep(1000);
+
+        boolean hasReceivedMessage = messagesToReceiveUser2.await(5, TimeUnit.SECONDS);
+
+        LOG.info("Disconnect user 2");
+
+        sessionUser2.disconnect();
+
+        if (failureUser2.get() != null) {
+            fail(failureUser2.get().getMessage());
+        } else if (!hasReceivedMessage) {
+            fail("Test wasn't completed User2");
+        }
+    }
+
+    @Test
+    public void sendMessageFromUserToUserBoothOnlineIssue43() throws Exception {
+        // Handle exceptions in threads
+        final AtomicReference<Throwable> failure = new AtomicReference<>();
+
+        WebSocketHttpHeaders headersUser1 = new WebSocketHttpHeaders();
+        WebSocketHttpHeaders headersUser21 = new WebSocketHttpHeaders();
+        WebSocketHttpHeaders headersUser22 = new WebSocketHttpHeaders();
+
+        StandardWebSocketClient standardWebSocketClientUser1 = new StandardWebSocketClient();
+        StandardWebSocketClient standardWebSocketClientUser21 = new StandardWebSocketClient();
+        StandardWebSocketClient standardWebSocketClientUser22 = new StandardWebSocketClient();
+
+        WebSocketStompClient stompClientUser1 = new WebSocketStompClient(standardWebSocketClientUser1);
+        WebSocketStompClient stompClientUser21 = new WebSocketStompClient(standardWebSocketClientUser21);
+        WebSocketStompClient stompClientUser22 = new WebSocketStompClient(standardWebSocketClientUser22);
+        stompClientUser1.setMessageConverter(new MappingJackson2MessageConverter());
+        stompClientUser21.setMessageConverter(new MappingJackson2MessageConverter());
+        stompClientUser22.setMessageConverter(new MappingJackson2MessageConverter());
+
+        StompHeaders connectHeadersUser1 = new StompHeaders();
+        connectHeadersUser1.add("username", nameUser1);
+        connectHeadersUser1.add("password", passUser1);
+
+        StompHeaders connectHeadersUser21 = new StompHeaders();
+        connectHeadersUser21.add("username", nameUser2);
+        connectHeadersUser21.add("password", passUser2);
+
+        StompHeaders connectHeadersUser22 = new StompHeaders();
+        connectHeadersUser22.add("username", nameUser2);
+        connectHeadersUser22.add("password", passUser2);
+
+        // Connect
+        StompSession sessionUser1 = stompClientUser1.connect("ws://" + backEndURI + ":{port}/ws", headersUser1, connectHeadersUser1, new StompSessionHandlerAdapter() {
+        }, this.port).get(2, SECONDS);
+
+        StompSession session1User2 = stompClientUser21.connect("ws://" + backEndURI + ":{port}/ws", headersUser21, connectHeadersUser21, new StompSessionHandlerAdapter() {
+        }, this.port).get(2, SECONDS);
+
+        StompSession session2User2 = stompClientUser22.connect("ws://" + backEndURI + ":{port}/ws", headersUser22, connectHeadersUser22, new StompSessionHandlerAdapter() {
+        }, this.port).get(2, SECONDS);
+
+        // Check if connection have failed
+        assert (sessionUser1 != null && session1User2 != null && session2User2 != null && sessionUser1.isConnected() && session1User2.isConnected() && session2User2.isConnected());
+
+        // Subscribe to the channels and send message
+        // We have to receive 2 messages
+        final CountDownLatch messagesToReceive = new CountDownLatch(3);
+
+        sessionUser1.subscribe("/user/queue/message", new StompFrameHandler() {
+            @Override
+            public Type getPayloadType(StompHeaders headers) {
+                return BasicPackage.class;
+            }
+
+            @Override
+            public void handleFrame(StompHeaders headers, Object payload) {
+                LOG.info("Message arrived: /user/queue/message User 1");
+
+                failure.set(new Exception("Message arrived to User1"));
+            }
+
+        });
+
+        StompFrameHandler user2MessageFrameHandler = new StompFrameHandler() {
+            @Override
+            public Type getPayloadType(StompHeaders headers) {
+                return BasicPackage.class;
+            }
+
+            @Override
+            public void handleFrame(StompHeaders headers, Object payload) {
+                LOG.info("Message arrived: /user/queue/message User 2");
+
+                if (payload instanceof MessageFromUserResponse &&
+                        ((MessageFromUserResponse) payload).getMessage().equals(sendMessageContent) &&
+                        ((MessageFromUserResponse) payload).getFrom().equals(nameUser1)) {
+                    messagesToReceive.countDown();
+                } else {
+                    failure.set(new Exception("Message with bad content in User2"));
+                }
+            }
+        };
+
+        session1User2.subscribe("/user/queue/message", user2MessageFrameHandler);
+
+        session2User2.subscribe("/user/queue/message", user2MessageFrameHandler);
+
+        sessionUser1.subscribe("/user/queue/error/message", new StompFrameHandler() {
+            @Override
+            public Type getPayloadType(StompHeaders headers) {
+                return BasicPackage.class;
+            }
+
+            @Override
+            public void handleFrame(StompHeaders headers, Object payload) {
+                LOG.info("Message arrived: /user/queue/error/message User 1");
+
+                BasicPackage errorResponse = (BasicPackage) payload;
+                if (errorResponse.getMessageId() == sendMessageID && errorResponse instanceof OperationSucceedResponse)
+                    messagesToReceive.countDown();
+
+                else if (errorResponse.getMessageId() == sendMessageID && errorResponse instanceof OperationFailResponse)
+                    failure.set(new Exception(((OperationFailResponse) errorResponse).getDescription()));
+
+                else
+                    failure.set(new Exception("Message with bad content in User1 errors"));
+            }
+        });
+
+        StompFrameHandler user2ErrorFrameHandler = new StompFrameHandler() {
+            @Override
+            public Type getPayloadType(StompHeaders headers) {
+                return BasicPackage.class;
+            }
+
+            @Override
+            public void handleFrame(StompHeaders headers, Object payload) {
+                LOG.info("Message arrived: /user/queue/error/message User 2");
+
+                failure.set(new Exception("Message in User2 errors"));
+            }
+        };
+
+        session1User2.subscribe("/user/queue/error/message", user2ErrorFrameHandler);
+
+        session2User2.subscribe("/user/queue/error/message", user2ErrorFrameHandler);
+
+        // Allow subscriptions to set up
+        Thread.sleep(3000);
+
+        sessionUser1.send("/app/message", new SendMessageToUserCommand(sendMessageID, nameUser2, sendMessageContent));
+
+        boolean hasReceivedMessage = messagesToReceive.await(5, TimeUnit.SECONDS);
+
+        sessionUser1.disconnect();
+        session1User2.disconnect();
+        session2User2.disconnect();
+
+        if (failure.get() != null) {
+            fail(failure.get().getMessage());
+        } else if (!hasReceivedMessage) {
+            fail("Test wasn't completed");
         }
     }
 }

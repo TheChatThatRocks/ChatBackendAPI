@@ -1,0 +1,52 @@
+version: '3'
+services:
+  postgresql-database:
+    image: postgres:12.2
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=easypassword
+
+# Uncomment for local deploy if MongoAtlas is down
+  mongodb-database:
+    image: mongo:4.2.5
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=mongoadmin
+      - MONGO_INITDB_ROOT_PASSWORD=easypassword
+      - MONGO_INITDB_DATABASE=mymongodb
+
+  grafana-dashboard:
+    image: grafana/grafana:7.0.0-beta3
+    ports:
+      - "3000:3000"
+
+  prometheus-metrics:
+    build: prometheus
+    ports:
+      - "9090:9090"
+
+  rabbitmq-broker:
+    build: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+      - "15692:15692"
+
+  encryption:
+    build: encryption
+    ports:
+      - "7799:8080"
+
+  backend-api:
+    build: backendAPI
+    ports:
+      - "8080:8080"
+    depends_on:
+      - rabbitmq-broker
+      - encryption
+      - postgresql-database
+      - mongodb-database
+    command: sleep 10

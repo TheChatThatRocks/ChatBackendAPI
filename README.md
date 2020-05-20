@@ -1,4 +1,15 @@
 # For development
+
+- To deploy all endpoints on local containers run BackendAPI in your IDE with `local`as active profile (VM Options `-Dspring.profiles.active=local`).
+In addition, you must comment last backend-api container from `docker-compose-local.yml`
+It is useful if you have **debug the backend API** 
+
+- For deploy all system on local containers run `cd deploy && ./deploy_local.sh`. Now the active profile will be `localDocker`. 
+Remember to uncomment the `backend-api` from docker-compose file.
+It is useful if you are **working in with another endpoint such as ChatClientCLI** 
+
+
+
 ## Setup databases and the message broker in docker
 ``` shell script
 # Install docker if it is not installed yet. If you don't use snap, you can watch https://docs.docker.com/engine/install/ for other installation methods
@@ -16,7 +27,6 @@ sudo docker pull rabbitmq:3.8.3-management
 
 ## Prometheus
 sudo docker pull prom/prometheus:2.17.2
-
 
 
 # Run all docker images
@@ -42,6 +52,11 @@ sudo docker run -d --rm --name grafana --name=grafana -p 3000:3000 grafana/grafa
 
 ```
 
+## Development
+For development in the local machine run with:
+```
+-Dspring.profiles.active=local
+```
 
 ## Métricas
  

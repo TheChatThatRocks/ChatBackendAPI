@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class MonitorConfig {
 
-    @Value("${spring.application.name}")
+    @Value("${spring.application.name}:chat")
     private String appName;
 
 //    @Autowired
