@@ -13,13 +13,13 @@ import java.util.Objects;
 @Service
 public class EncryptionAPI {
 
-    private RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate = new RestTemplate();
 
-    @Value("${spring.encryption.host}")
+    @Value("${app.encryption.server.host}")
     String host;
 
 
-    @Value("${spring.encryption.port}")
+    @Value("${app.encryption.server.port}")
     String port;
     /**
      * Encrypt with symmetric cipher

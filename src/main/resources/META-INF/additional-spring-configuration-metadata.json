@@ -51,14 +51,19 @@
       "description": "Max len of content message on the logger."
     },
     {
-      "name": "spring.encryption.host",
+      "name": "app.encryption.server.host",
       "type": "java.lang.String",
       "description": "Host for Encryption API endpoint."
     },
     {
-      "name": "spring.encryption.port",
-      "type": "java.lang.String",
+      "name": "app.encryption.server.port",
+      "type": "java.lang.Integer",
       "description": "Port for Encryption API endpoint."
+    },
+    {
+      "name": "app.name",
+      "type": "java.lang.String",
+      "description": "Description for app.name."
     }
   ]
 }
