@@ -12,16 +12,17 @@ COPY settings.gradle .
 RUN chmod +x /workspace/app/gradlew
 RUN /workspace/app/gradlew clean build -x test
 
+# Download wait for it
+RUN wget https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh
+RUN chmod +x wait-for-it.sh
+
 # Extranct files
 RUN mkdir -p build/dependency && (cd /workspace/app/build/dependency; jar -xf /workspace/app/build/libs/*.jar)
 
 # Execution
-FROM openjdk:11-jdk
+FROM openjdk:11-jdk-slim
 EXPOSE 8080
 EXPOSE 7070
-
-RUN wget https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh
-RUN chmod +x wait-for-it.sh
 
 ENV DEPENDENCY=/workspace/app/build/dependency
 COPY --from=build ${DEPENDENCY}/BOOT-INF/lib /app/lib
