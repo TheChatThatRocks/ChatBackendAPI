@@ -5,6 +5,8 @@ import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import java.util.Arrays;
+
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class EncryptionAPITest {
@@ -14,7 +16,6 @@ public class EncryptionAPITest {
 
     @Test
     public void symmetricEncryptionMsg() {
-
         String msg = "testMsgSYM";
         String encrypted = encryptionAPI.symmetricEncryptString(msg);
         System.out.println("MSG encrypted: " + encrypted);
@@ -26,26 +27,25 @@ public class EncryptionAPITest {
 
     @Test
     public void asymmetricEncryptionMsg() {
-        //TODO: test asymetric
-//        String msg = "testMsgASYM";
-//        String encrypted = encryptionAPI.asymmetricEncryptString(msg);
-//        System.out.println("MSG encrypted: " + encrypted);
-//        String decrypted = encryptionAPI.symmetricDecryptString(encrypted);
-//        System.out.println("MSG decrypted: " + decrypted);
-//        assert !encrypted.equals(decrypted);
-//        assert msg.equals(decrypted);
+        String msg = "testMsgASYM";
+        String encrypted = encryptionAPI.asymmetricEncryptString(msg);
+        String encrypted2 = encryptionAPI.asymmetricEncryptString(msg);
+        System.out.println("MSG original: " + msg);
+        System.out.println("MSG encrypted: " + encrypted);
+        System.out.println("MSG encrypted 2: " + encrypted2);
+        assert !encrypted.equals(msg);
+        assert encrypted.equals(encrypted2);
     }
 
     @Test
     public void symmetricEncryptionFile() {
-
-        byte[] msg = ("testFILESYM").getBytes();
+        byte[] msg = {1, 2, 3, 4, 5};
         byte[] encrypted = encryptionAPI.symmetricEncryptFile(msg);
-        System.out.println("MSG encrypted: " + new String(encrypted));
-        String decrypted = new String(encryptionAPI.symmetricDecryptFile(encrypted));
-        System.out.println("MSG decrypted: " + decrypted);
-        assert !new String(encrypted).equals(decrypted);
-        assert new String(msg).equals(decrypted);
+        byte[] decrypted = encryptionAPI.symmetricDecryptFile(encrypted);
+        System.out.println("MSG original: " + Arrays.toString(msg));
+        System.out.println("MSG encrypted: " + Arrays.toString(encrypted));
+        System.out.println("MSG decrypted: " + Arrays.toString(decrypted));
+        assert !Arrays.equals(msg, encrypted);
+        assert Arrays.equals(msg, decrypted);
     }
-
 }
