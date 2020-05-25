@@ -5,6 +5,7 @@ import com.eina.chat.backendapi.protocol.packages.common.response.OperationFailR
 import com.eina.chat.backendapi.protocol.packages.common.response.OperationSucceedResponse;
 import com.eina.chat.backendapi.protocol.packages.message.request.CreateRoomCommand;
 import com.eina.chat.backendapi.security.AccessLevels;
+import com.eina.chat.backendapi.service.EncryptionAPI;
 import com.eina.chat.backendapi.service.MessageBrokerAPI;
 import com.eina.chat.backendapi.service.PersistentDataAPI;
 import org.junit.jupiter.api.AfterEach;
@@ -58,6 +59,10 @@ public class CreateChatRoomCommandAPIControllerTest {
     @Autowired
     private MessageBrokerAPI messageBrokerAPI;
 
+    // Encryption API
+    @Autowired
+    EncryptionAPI encryptionAPI;
+
     // Variables
     final private String nameAdminUser = "testUser1";
     final private String passAdminUser = "test";
@@ -71,7 +76,7 @@ public class CreateChatRoomCommandAPIControllerTest {
 
         // Delete groups where are admin
         List<String> groupsWereAdminUser1 = persistentDataAPI.getAllGroupsWhereIsAdmin(nameAdminUser);
-        for (String i : groupsWereAdminUser1){
+        for (String i : groupsWereAdminUser1) {
             messageBrokerAPI.deleteGroup(i);
         }
 
@@ -79,7 +84,7 @@ public class CreateChatRoomCommandAPIControllerTest {
         messageBrokerAPI.deleteUser(nameAdminUser);
 
         // Create users in database
-        persistentDataAPI.createUser(nameAdminUser, passAdminUser, AccessLevels.ROLE_USER);
+        persistentDataAPI.createUser(nameAdminUser, encryptionAPI.asymmetricEncryptString(passAdminUser), AccessLevels.ROLE_USER);
 
         // Create users in broker
         messageBrokerAPI.createUser(nameAdminUser);

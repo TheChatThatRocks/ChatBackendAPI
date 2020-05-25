@@ -6,6 +6,7 @@ import com.eina.chat.backendapi.protocol.packages.common.response.OperationSucce
 import com.eina.chat.backendapi.protocol.packages.message.request.CreateRoomCommand;
 import com.eina.chat.backendapi.protocol.packages.message.request.GetAuthLevelCommand;
 import com.eina.chat.backendapi.security.AccessLevels;
+import com.eina.chat.backendapi.service.EncryptionAPI;
 import com.eina.chat.backendapi.service.MessageBrokerAPI;
 import com.eina.chat.backendapi.service.PersistentDataAPI;
 import org.junit.jupiter.api.AfterEach;
@@ -59,6 +60,10 @@ public class GetAuthLevelCommandAPIControllerTest {
     @Autowired
     private MessageBrokerAPI messageBrokerAPI;
 
+    // Encryption API
+    @Autowired
+    EncryptionAPI encryptionAPI;
+
     // Variables
     final private String nameAdminUser = "testUser1";
     final private String passAdminUser = "test";
@@ -70,7 +75,7 @@ public class GetAuthLevelCommandAPIControllerTest {
 
         // Delete groups where are admin
         List<String> groupsWereAdminUser1 = persistentDataAPI.getAllGroupsWhereIsAdmin(nameAdminUser);
-        for (String i : groupsWereAdminUser1){
+        for (String i : groupsWereAdminUser1) {
             messageBrokerAPI.deleteGroup(i);
         }
 
@@ -78,11 +83,11 @@ public class GetAuthLevelCommandAPIControllerTest {
         messageBrokerAPI.deleteUser(nameAdminUser);
 
         // Create users in database
-        persistentDataAPI.createUser(nameAdminUser, passAdminUser, AccessLevels.ROLE_USER);
+        persistentDataAPI.createUser(nameAdminUser, encryptionAPI.asymmetricEncryptString(passAdminUser), AccessLevels.ROLE_USER);
 
         // Create users in broker
         messageBrokerAPI.createUser(nameAdminUser);
-        
+
     }
 
     @AfterEach
@@ -145,7 +150,7 @@ public class GetAuthLevelCommandAPIControllerTest {
                 if (errorResponse.getMessageId() == sendMessageID && errorResponse instanceof OperationSucceedResponse)
                     messagesToReceive.countDown();
 
-                else if(errorResponse.getMessageId() == sendMessageID && errorResponse instanceof OperationFailResponse)
+                else if (errorResponse.getMessageId() == sendMessageID && errorResponse instanceof OperationFailResponse)
                     failure.set(new Exception(((OperationFailResponse) errorResponse).getDescription()));
 
                 else

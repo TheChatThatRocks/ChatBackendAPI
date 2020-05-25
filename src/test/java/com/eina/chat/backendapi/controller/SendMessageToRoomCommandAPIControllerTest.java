@@ -8,6 +8,7 @@ import com.eina.chat.backendapi.protocol.packages.message.request.SendMessageToR
 import com.eina.chat.backendapi.protocol.packages.message.response.MessageFromRoomResponse;
 import com.eina.chat.backendapi.protocol.packages.message.response.MessageHistoryFromRoomResponse;
 import com.eina.chat.backendapi.security.AccessLevels;
+import com.eina.chat.backendapi.service.EncryptionAPI;
 import com.eina.chat.backendapi.service.MessageBrokerAPI;
 import com.eina.chat.backendapi.service.PersistentDataAPI;
 import org.junit.jupiter.api.AfterEach;
@@ -61,6 +62,10 @@ public class SendMessageToRoomCommandAPIControllerTest {
     @Autowired
     private MessageBrokerAPI messageBrokerAPI;
 
+    // Encryption API
+    @Autowired
+    EncryptionAPI encryptionAPI;
+
     // Variables
     final private String nameUser1 = "testUser1";
     final private String nameUser2 = "testUser2";
@@ -96,8 +101,8 @@ public class SendMessageToRoomCommandAPIControllerTest {
         messageBrokerAPI.deleteUser(nameUser2);
 
         // Create users in database
-        persistentDataAPI.createUser(nameUser1, passUser1, AccessLevels.ROLE_USER);
-        persistentDataAPI.createUser(nameUser2, passUser2, AccessLevels.ROLE_USER);
+        persistentDataAPI.createUser(nameUser1, encryptionAPI.asymmetricEncryptString(passUser1), AccessLevels.ROLE_USER);
+        persistentDataAPI.createUser(nameUser2, encryptionAPI.asymmetricEncryptString(passUser2), AccessLevels.ROLE_USER);
 
         // Create users in broker
         messageBrokerAPI.createUser(nameUser1);
@@ -445,7 +450,7 @@ public class SendMessageToRoomCommandAPIControllerTest {
             public void handleFrame(StompHeaders headers, Object payload) {
                 if (payload instanceof MessageHistoryFromRoomResponse)
                     LOG.info("Message arrived: /user/queue/message User 1 of type MessageHistoryFromRoomResponse");
-                else if(payload instanceof MessageFromRoomResponse)
+                else if (payload instanceof MessageFromRoomResponse)
                     LOG.info("Message arrived: /user/queue/message User 1 of type MessageFromRoomResponse");
                 else
                     LOG.info("Message arrived: /user/queue/message User 1 of unknown type");
@@ -468,7 +473,7 @@ public class SendMessageToRoomCommandAPIControllerTest {
             public void handleFrame(StompHeaders headers, Object payload) {
                 if (payload instanceof MessageHistoryFromRoomResponse)
                     LOG.info("Message arrived: /user/queue/message User 2 of type MessageHistoryFromRoomResponse");
-                else if(payload instanceof MessageFromRoomResponse)
+                else if (payload instanceof MessageFromRoomResponse)
                     LOG.info("Message arrived: /user/queue/message User 2 of type MessageFromRoomResponse");
                 else
                     LOG.info("Message arrived: /user/queue/message User 2 of unknown type");
