@@ -1,6 +1,7 @@
 package com.eina.chat.backendapi.config;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.prometheus.PrometheusMeterRegistry;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.actuate.autoconfigure.metrics.MeterRegistryCustomizer;
 import org.springframework.boot.actuate.health.HealthEndpoint;
@@ -15,7 +16,7 @@ public class MonitorConfig {
     private String appName;
 
     @Bean
-    MeterRegistryCustomizer<MeterRegistry> metricsAPI() {
+    MeterRegistryCustomizer<PrometheusMeterRegistry> metricsAPI() {
         return registry -> registry.config().commonTags("application", appName);
     }
 
