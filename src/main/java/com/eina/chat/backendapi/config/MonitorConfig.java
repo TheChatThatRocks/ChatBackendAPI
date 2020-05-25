@@ -19,9 +19,4 @@ public class MonitorConfig {
     MeterRegistryCustomizer<PrometheusMeterRegistry> metricsAPI() {
         return registry -> registry.config().commonTags("application", appName);
     }
-
-    private static int healthToCode(HealthEndpoint ep) {
-        Status status = ep.health().getStatus();
-        return status.equals(Status.UP) ? 1 : 0;
-    }
 }

@@ -8,11 +8,17 @@ import com.eina.chat.backendapi.security.AccessLevels;
 import com.eina.chat.backendapi.service.EncryptionAPI;
 import com.eina.chat.backendapi.service.MessageBrokerAPI;
 import com.eina.chat.backendapi.service.PersistentDataAPI;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Metrics;
+import io.micrometer.prometheus.PrometheusMeterRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.actuate.autoconfigure.metrics.MeterRegistryCustomizer;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Controller
 public class SignUpController {
@@ -34,6 +40,8 @@ public class SignUpController {
     @Autowired
     private MessageBrokerAPI messageBrokerAPI;
 
+
+    private AtomicInteger users = Metrics.gauge("user", new AtomicInteger(0));
     /**
      * Min and max username length
      */
@@ -80,6 +88,7 @@ public class SignUpController {
 
                 // Create user in the broker
                 messageBrokerAPI.createUser(addAccountCommand.getUsername());
+                users.incrementAndGet();
                 return new OperationSucceedResponse(basicPackage.getMessageId());
             }
         } else

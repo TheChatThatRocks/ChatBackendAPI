@@ -8,6 +8,7 @@ import com.eina.chat.backendapi.protocol.packages.common.response.OperationFailR
 import com.eina.chat.backendapi.rabbitmq.ReceiveHandler;
 import com.eina.chat.backendapi.service.*;
 import io.micrometer.core.annotation.Timed;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Metrics;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -28,6 +29,7 @@ import java.security.Principal;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 @Controller
@@ -63,6 +65,8 @@ public class CommandAPIController {
     @Autowired
     private static final Logger logger = LoggerFactory.getLogger(CommandAPIController.class);
 
+    @Autowired
+    private MeterRegistry meterRegistry;
     /**
      * Max file size in MB
      */
@@ -84,6 +88,8 @@ public class CommandAPIController {
     @Value("${app.min-room-length:}")
     private Integer minRoomLength;
 
+    private AtomicInteger rooms = Metrics.gauge("rooms", new AtomicInteger(0));
+    private AtomicInteger users_conn = Metrics.gauge("user_conn", new AtomicInteger(0));
 
     /**
      * Executor user for async tasks
@@ -187,11 +193,13 @@ public class CommandAPIController {
             return new OperationFailResponse(createRoomCommand.getMessageId(), "The name of the room already exists");
 
         else {
+            rooms.incrementAndGet();
             persistentDataAPI.createGroup(username, createRoomCommand.getRoomName());
             messageBrokerAPI.addUserToGroup(username, createRoomCommand.getRoomName());
             return new OperationSucceedResponse(createRoomCommand.getMessageId());
         }
     }
+
 
     /**
      * Handle messages received from user with content of type DeleteAccountCommand
@@ -242,7 +250,7 @@ public class CommandAPIController {
 
             // Delete group from broker
             messageBrokerAPI.deleteGroup(deleteRoomCommand.getRoomName());
-
+            rooms.decrementAndGet();
             return new OperationSucceedResponse(deleteRoomCommand.getMessageId());
         }
     }
@@ -477,6 +485,7 @@ public class CommandAPIController {
         logger.info("Session Subscribe Event on endpoint: " + simpDestination + " by user: " + username);
 
         if (simpDestination.equals("/user/queue/message") && !username.isBlank()) {
+            users_conn.incrementAndGet();
             messageBrokerAPI.addUserReceiverMessagesCallback(username, new ReceiveHandler() {
                 @Override
                 public void onUserMessageArrive(String fromUsername, String message) {
@@ -533,6 +542,7 @@ public class CommandAPIController {
 
         // Unsubscription
         if (simpDestination.equals("/user/queue/message") && !username.isBlank()) {
+            users_conn.decrementAndGet();
             messageBrokerAPI.deleteUserReceiverMessagesCallback(username);
         }
     }
@@ -549,6 +559,7 @@ public class CommandAPIController {
 
         // Unsubscription from RabbitMQ
         if (!username.isBlank()) {
+            users_conn.decrementAndGet();
             messageBrokerAPI.deleteUserReceiverMessagesCallback(username);
         }
     }
