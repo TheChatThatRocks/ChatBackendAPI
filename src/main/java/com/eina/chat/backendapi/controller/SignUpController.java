@@ -62,10 +62,11 @@ public class SignUpController {
                     addAccountCommand.getUsername().length() < minUsernameLength ||
                     maxUsernameLength < addAccountCommand.getUsername().length() ||
                     addAccountCommand.getPassword().length() < minPasswordLength ||
-                    maxPasswordLength < addAccountCommand.getPassword().length()
+                    maxPasswordLength < addAccountCommand.getPassword().length() ||
+                    !addAccountCommand.getUsername().matches("[a-zA-Z0-9]+")
             )
                 return new OperationFailResponse(basicPackage.getMessageId(), "Username name must have between " +
-                        minUsernameLength + " and " + maxUsernameLength + " characters and password " +
+                        minUsernameLength + " and " + maxUsernameLength + " characters (only alphanumeric allowed) and password " +
                         "must have between " + minPasswordLength + " and " + maxPasswordLength + " characters");
 
             else if (persistentDataAPI.checkUserExist(addAccountCommand.getUsername()))
