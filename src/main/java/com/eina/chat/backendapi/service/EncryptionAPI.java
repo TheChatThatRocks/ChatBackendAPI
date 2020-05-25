@@ -1,5 +1,9 @@
 package com.eina.chat.backendapi.service;
 
+import com.eina.chat.backendapi.controller.CommandAPIController;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -8,10 +12,18 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.Arrays;
+import java.util.Base64;
 import java.util.Objects;
 
 @Service
 public class EncryptionAPI {
+    /**
+     * Logger
+     */
+    @Autowired
+    private static final Logger logger = LoggerFactory.getLogger(EncryptionAPI.class);
+
 
     private final RestTemplate restTemplate = new RestTemplate();
 
@@ -21,6 +33,7 @@ public class EncryptionAPI {
 
     @Value("${app.encryption.server.port}")
     String port;
+
     /**
      * Encrypt with symmetric cipher
      *
@@ -31,7 +44,7 @@ public class EncryptionAPI {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.TEXT_PLAIN);
         HttpEntity<String> request = new HttpEntity<>(toEncrypt, headers);
-        HttpEntity<String> response = restTemplate.exchange("http://" + host + ":" +  port + "/symmetricEncrypt", HttpMethod.POST, request, String.class);
+        HttpEntity<String> response = restTemplate.exchange("http://" + host + ":" + port + "/symmetricEncrypt", HttpMethod.POST, request, String.class);
         return response.getBody();
     }
 
@@ -45,7 +58,7 @@ public class EncryptionAPI {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.TEXT_PLAIN);
         HttpEntity<String> request = new HttpEntity<>(toDecrypt, headers);
-        HttpEntity<String> response = restTemplate.exchange("http://" + host + ":" +  port + "/symmetricDecrypt", HttpMethod.POST, request, String.class);
+        HttpEntity<String> response = restTemplate.exchange("http://" + host + ":" + port + "/symmetricDecrypt", HttpMethod.POST, request, String.class);
         return response.getBody();
     }
 
@@ -62,7 +75,7 @@ public class EncryptionAPI {
 //        HttpEntity<String> response = restTemplate.exchange("http://" + host + ":" +  port + "/asymmetricEncrypt", HttpMethod.POST, request, String.class);
 //        // TODO:Uncomment for deploy
 //        return response.getBody();
-         return toEncrypt;
+        return toEncrypt;
     }
 
     /**
@@ -74,9 +87,13 @@ public class EncryptionAPI {
     public byte[] symmetricEncryptFile(byte[] toEncrypt) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.TEXT_PLAIN);
-        HttpEntity<String> request = new HttpEntity<>(new String(toEncrypt), headers);
-        HttpEntity<String> response = restTemplate.exchange("http://" + host + ":" +  port + "/symmetricEncrypt", HttpMethod.POST, request, String.class);
-        return Objects.requireNonNull(response.getBody()).getBytes();
+        String toEncryptInString = Base64.getEncoder().encodeToString(toEncrypt);
+        HttpEntity<String> request = new HttpEntity<>(toEncryptInString, headers);
+        HttpEntity<String> response = restTemplate.exchange("http://" + host + ":" + port + "/symmetricEncrypt", HttpMethod.POST, request, String.class);
+        if (response.getBody() != null)
+            return Base64.getDecoder().decode(response.getBody());
+        else
+            return null;
     }
 
 
@@ -89,9 +106,13 @@ public class EncryptionAPI {
     public byte[] symmetricDecryptFile(byte[] toDecrypt) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.TEXT_PLAIN);
-        HttpEntity<String> request = new HttpEntity<>(new String(toDecrypt), headers);
-        HttpEntity<String> response = restTemplate.exchange("http://" + host + ":" +  port + "/symmetricDecrypt", HttpMethod.POST, request, String.class);
-        return Objects.requireNonNull(response.getBody()).getBytes();
+        String toDecryptInString = Base64.getEncoder().encodeToString(toDecrypt);
+        HttpEntity<String> request = new HttpEntity<>(toDecryptInString, headers);
+        HttpEntity<String> response = restTemplate.exchange("http://" + host + ":" + port + "/symmetricDecrypt", HttpMethod.POST, request, String.class);
+        if (response.getBody() != null)
+            return Base64.getDecoder().decode(response.getBody());
+        else
+            return null;
     }
 
 }
