@@ -27,7 +27,7 @@ public class EncryptionAPITest {
 
     @Test
     public void asymmetricEncryptionMsg() {
-        String msg = "testMsgASYM";
+        String msg = "admin";
         String encrypted = encryptionAPI.asymmetricEncryptString(msg);
         String encrypted2 = encryptionAPI.asymmetricEncryptString(msg);
         System.out.println("MSG original: " + msg);
