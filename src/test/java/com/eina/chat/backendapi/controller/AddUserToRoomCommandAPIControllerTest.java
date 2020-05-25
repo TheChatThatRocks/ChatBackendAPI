@@ -5,6 +5,7 @@ import com.eina.chat.backendapi.protocol.packages.common.response.OperationFailR
 import com.eina.chat.backendapi.protocol.packages.common.response.OperationSucceedResponse;
 import com.eina.chat.backendapi.protocol.packages.message.request.AddUserToChatRoomCommand;
 import com.eina.chat.backendapi.security.AccessLevels;
+import com.eina.chat.backendapi.service.EncryptionAPI;
 import com.eina.chat.backendapi.service.MessageBrokerAPI;
 import com.eina.chat.backendapi.service.PersistentDataAPI;
 import org.junit.jupiter.api.AfterEach;
@@ -58,6 +59,10 @@ public class AddUserToRoomCommandAPIControllerTest {
     @Autowired
     private MessageBrokerAPI messageBrokerAPI;
 
+    // Encryption API
+    @Autowired
+    EncryptionAPI encryptionAPI;
+
     // Variables
     final private String nameAdminUser = "testUser1";
     final private String nameMemberUser = "testUser2";
@@ -89,8 +94,8 @@ public class AddUserToRoomCommandAPIControllerTest {
         messageBrokerAPI.deleteUser(nameMemberUser);
 
         // Create users in database
-        persistentDataAPI.createUser(nameAdminUser, passAdminUser, AccessLevels.ROLE_USER);
-        persistentDataAPI.createUser(nameMemberUser, passMemberUser, AccessLevels.ROLE_USER);
+        persistentDataAPI.createUser(nameAdminUser, encryptionAPI.asymmetricEncryptString(passAdminUser), AccessLevels.ROLE_USER);
+        persistentDataAPI.createUser(nameMemberUser, encryptionAPI.asymmetricEncryptString(passMemberUser), AccessLevels.ROLE_USER);
 
         // Create users in broker
         messageBrokerAPI.createUser(nameAdminUser);

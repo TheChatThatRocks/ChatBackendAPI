@@ -6,6 +6,7 @@ import com.eina.chat.backendapi.protocol.packages.common.response.OperationFailR
 import com.eina.chat.backendapi.protocol.packages.common.response.OperationSucceedResponse;
 import com.eina.chat.backendapi.protocol.packages.message.response.MessageFromUserResponse;
 import com.eina.chat.backendapi.security.AccessLevels;
+import com.eina.chat.backendapi.service.EncryptionAPI;
 import com.eina.chat.backendapi.service.MessageBrokerAPI;
 import com.eina.chat.backendapi.service.PersistentDataAPI;
 import org.junit.jupiter.api.BeforeEach;
@@ -59,6 +60,10 @@ public class SendMessageToAllCommandAPIControllerTest {
     @Autowired
     private MessageBrokerAPI messageBrokerAPI;
 
+    // Encryption API
+    @Autowired
+    EncryptionAPI encryptionAPI;
+
     // Variables
     final private String nameAdmin = "admin";
     final private String nameUser1 = "testUser1";
@@ -80,12 +85,12 @@ public class SendMessageToAllCommandAPIControllerTest {
 
         // Delete groups where are admin
         List<String> groupsWereAdminUser1 = persistentDataAPI.getAllGroupsWhereIsAdmin(nameUser1);
-        for (String i : groupsWereAdminUser1){
+        for (String i : groupsWereAdminUser1) {
             messageBrokerAPI.deleteGroup(i);
         }
 
         List<String> groupsWereAdminUser2 = persistentDataAPI.getAllGroupsWhereIsAdmin(nameUser1);
-        for (String i : groupsWereAdminUser2){
+        for (String i : groupsWereAdminUser2) {
             messageBrokerAPI.deleteGroup(i);
         }
 
@@ -94,9 +99,9 @@ public class SendMessageToAllCommandAPIControllerTest {
         messageBrokerAPI.deleteUser(nameUser2);
 
         // Create users in database
-        persistentDataAPI.createUser(nameUser1, passUser, AccessLevels.ROLE_USER);
-        persistentDataAPI.createUser(nameUser2, passUser, AccessLevels.ROLE_USER);
-        persistentDataAPI.createUser(nameAdmin, passAdmin, AccessLevels.ROLE_ADMIN);
+        persistentDataAPI.createUser(nameUser1, encryptionAPI.asymmetricEncryptString(passUser), AccessLevels.ROLE_USER);
+        persistentDataAPI.createUser(nameUser2, encryptionAPI.asymmetricEncryptString(passUser), AccessLevels.ROLE_USER);
+        persistentDataAPI.createUser(nameAdmin, encryptionAPI.asymmetricEncryptString(passAdmin), AccessLevels.ROLE_ADMIN);
 
         // Create users in broker
         messageBrokerAPI.createUser(nameUser1);
@@ -281,7 +286,7 @@ public class SendMessageToAllCommandAPIControllerTest {
         Thread.sleep(1000);
 
         hasReceivedMessage = messagesToReceiveUser2.await(5, TimeUnit.SECONDS) &&
-                            messagesToReceiveAdmin.await(5, TimeUnit.SECONDS);
+                messagesToReceiveAdmin.await(5, TimeUnit.SECONDS);
 
         sessionUser2.disconnect();
         sessionAdmin.disconnect();

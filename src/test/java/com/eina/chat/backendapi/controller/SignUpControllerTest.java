@@ -5,6 +5,7 @@ import com.eina.chat.backendapi.protocol.packages.common.response.OperationFailR
 import com.eina.chat.backendapi.protocol.packages.common.response.OperationSucceedResponse;
 import com.eina.chat.backendapi.protocol.packages.signup.request.AddAccountCommand;
 import com.eina.chat.backendapi.security.AccessLevels;
+import com.eina.chat.backendapi.service.EncryptionAPI;
 import com.eina.chat.backendapi.service.MessageBrokerAPI;
 import com.eina.chat.backendapi.service.PersistentDataAPI;
 import org.junit.jupiter.api.*;
@@ -47,6 +48,10 @@ public class SignUpControllerTest {
     @Autowired
     private MessageBrokerAPI messageBrokerAPI;
 
+    // Encryption API
+    @Autowired
+    EncryptionAPI encryptionAPI;
+
     // Test user data
     final private String username = "testusername";
     final private String password = "testpassword";
@@ -58,7 +63,7 @@ public class SignUpControllerTest {
 
         // Delete groups where are admin
         List<String> groupsWereAdminUser1 = persistentDataAPI.getAllGroupsWhereIsAdmin(username);
-        for (String i : groupsWereAdminUser1){
+        for (String i : groupsWereAdminUser1) {
             messageBrokerAPI.deleteGroup(i);
         }
 
@@ -140,7 +145,7 @@ public class SignUpControllerTest {
     public void duplicatedUser() throws Exception {
         // Create user
         if (!persistentDataAPI.checkUserExist(username)) {
-            persistentDataAPI.createUser(username, password, AccessLevels.ROLE_USER);
+            persistentDataAPI.createUser(username, encryptionAPI.asymmetricEncryptString(password), AccessLevels.ROLE_USER);
             messageBrokerAPI.createUser(username);
         }
 
