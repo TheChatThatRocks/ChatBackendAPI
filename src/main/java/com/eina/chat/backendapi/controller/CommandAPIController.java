@@ -178,9 +178,10 @@ public class CommandAPIController {
     public BasicPackage handlerCreateRoomCommand(String username, CreateRoomCommand createRoomCommand) {
         logger.info("Received message from type CreateRoomCommand from: " + username);
         if (createRoomCommand.getRoomName() == null || createRoomCommand.getRoomName().length() < minRoomLength ||
-                maxRoomLength < createRoomCommand.getRoomName().length())
+                maxRoomLength < createRoomCommand.getRoomName().length() ||
+                !createRoomCommand.getRoomName().matches("[a-zA-Z0-9]+"))
             return new OperationFailResponse(createRoomCommand.getMessageId(), "Room name must have between " +
-                    minRoomLength.toString() + " and " + maxRoomLength.toString() + " characters");
+                    minRoomLength.toString() + " and " + maxRoomLength.toString() + " characters (only alphanumeric allowed)");
 
         else if (persistentDataAPI.checkIfGroupExist(createRoomCommand.getRoomName()))
             return new OperationFailResponse(createRoomCommand.getMessageId(), "The name of the room already exists");
