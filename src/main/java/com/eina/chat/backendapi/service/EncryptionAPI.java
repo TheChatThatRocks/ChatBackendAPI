@@ -56,11 +56,13 @@ public class EncryptionAPI {
      * @return encrypted object
      */
     public String asymmetricEncryptString(String toEncrypt) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.TEXT_PLAIN);
-        HttpEntity<String> request = new HttpEntity<>(toEncrypt, headers);
-        HttpEntity<String> response = restTemplate.exchange("http://" + host + ":" +  port + "/asymmetricEncrypt", HttpMethod.POST, request, String.class);
-        return response.getBody();
+//        HttpHeaders headers = new HttpHeaders();
+//        headers.setContentType(MediaType.TEXT_PLAIN);
+//        HttpEntity<String> request = new HttpEntity<>(toEncrypt, headers);
+//        HttpEntity<String> response = restTemplate.exchange("http://" + host + ":" +  port + "/asymmetricEncrypt", HttpMethod.POST, request, String.class);
+//        // TODO:Uncomment for deploy
+//        return response.getBody();
+         return toEncrypt;
     }
 
     /**
