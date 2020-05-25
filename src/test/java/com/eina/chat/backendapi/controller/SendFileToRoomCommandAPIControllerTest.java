@@ -6,6 +6,7 @@ import com.eina.chat.backendapi.protocol.packages.common.response.OperationSucce
 import com.eina.chat.backendapi.protocol.packages.message.request.SendFileToRoomCommand;
 import com.eina.chat.backendapi.protocol.packages.message.response.FileFromRoomResponse;
 import com.eina.chat.backendapi.security.AccessLevels;
+import com.eina.chat.backendapi.service.EncryptionAPI;
 import com.eina.chat.backendapi.service.MessageBrokerAPI;
 import com.eina.chat.backendapi.service.PersistentDataAPI;
 import org.apache.commons.lang3.RandomUtils;
@@ -61,6 +62,10 @@ public class SendFileToRoomCommandAPIControllerTest {
     @Autowired
     private MessageBrokerAPI messageBrokerAPI;
 
+    // Encryption API
+    @Autowired
+    EncryptionAPI encryptionAPI;
+
     // Variables
     final private String nameUser1 = "testUser1";
     final private String nameUser2 = "testUser2";
@@ -96,8 +101,8 @@ public class SendFileToRoomCommandAPIControllerTest {
         messageBrokerAPI.deleteUser(nameUser2);
 
         // Create users in database
-        persistentDataAPI.createUser(nameUser1, passUser1, AccessLevels.ROLE_USER);
-        persistentDataAPI.createUser(nameUser2, passUser2, AccessLevels.ROLE_USER);
+        persistentDataAPI.createUser(nameUser1, encryptionAPI.asymmetricEncryptString(passUser1), AccessLevels.ROLE_USER);
+        persistentDataAPI.createUser(nameUser2, encryptionAPI.asymmetricEncryptString(passUser2), AccessLevels.ROLE_USER);
 
         // Create users in broker
         messageBrokerAPI.createUser(nameUser1);
