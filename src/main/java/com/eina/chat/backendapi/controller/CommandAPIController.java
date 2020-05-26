@@ -423,16 +423,20 @@ public class CommandAPIController {
      */
     public BasicPackage handlerGetFileHistoryFromRoomCommand(String username, GetFileHistoryFromRoomCommand getFileHistoryFromRoomCommand) {
         logger.info("Received message from type GetFileHistoryFromRoomCommand from: " + username);
-        executorService.submit(() -> {
-            List<Pair<String, byte[]>> usersFiles = persistentDataAPI.getOrderedFilesFromGroup(getFileHistoryFromRoomCommand.getRoomName());
-            List<String> users = usersFiles.stream().map(Pair::getLeft).collect(Collectors.toList());
-            List<byte[]> files = usersFiles.stream().map(file -> encryptionAPI.symmetricDecryptFile(file.getRight()))
-                    .collect(Collectors.toList());
-            simpMessagingTemplate.convertAndSendToUser(username, "/queue/message",
-                    new FileHistoryFromRoomResponse(getFileHistoryFromRoomCommand.getMessageId(),
-                            getFileHistoryFromRoomCommand.getRoomName(), users, files));
-        });
-        return new OperationSucceedResponse(getFileHistoryFromRoomCommand.getMessageId());
+        if (persistentDataAPI.checkIfIsGroupMember(username, getFileHistoryFromRoomCommand.getRoomName())) {
+            executorService.submit(() -> {
+                List<Pair<String, byte[]>> usersFiles = persistentDataAPI.getOrderedFilesFromGroup(getFileHistoryFromRoomCommand.getRoomName());
+                List<String> users = usersFiles.stream().map(Pair::getLeft).collect(Collectors.toList());
+                List<byte[]> files = usersFiles.stream().map(file -> encryptionAPI.symmetricDecryptFile(file.getRight()))
+                        .collect(Collectors.toList());
+                simpMessagingTemplate.convertAndSendToUser(username, "/queue/message",
+                        new FileHistoryFromRoomResponse(getFileHistoryFromRoomCommand.getMessageId(),
+                                getFileHistoryFromRoomCommand.getRoomName(), users, files));
+            });
+            return new OperationSucceedResponse(getFileHistoryFromRoomCommand.getMessageId());
+        } else {
+            return new OperationFailResponse(getFileHistoryFromRoomCommand.getMessageId(), "You are not group member");
+        }
     }
 
     /**
@@ -459,16 +463,20 @@ public class CommandAPIController {
      */
     public BasicPackage handlerGetMessageHistoryFromRoomCommand(String username, GetMessageHistoryFromRoomCommand getMessageHistoryFromRoomCommand) {
         logger.info("Received message from type GetMessageHistoryFromRoomCommand from: " + username);
-        executorService.submit(() -> {
-            List<Pair<String, String>> usersFiles = persistentDataAPI.getOrderedMessagesFromGroup(getMessageHistoryFromRoomCommand.getRoomName());
-            List<String> users = usersFiles.stream().map(Pair::getLeft).collect(Collectors.toList());
-            List<String> messages = usersFiles.stream().map(message -> encryptionAPI.symmetricDecryptString(message.getRight()))
-                    .collect(Collectors.toList());
-            simpMessagingTemplate.convertAndSendToUser(username, "/queue/message",
-                    new MessageHistoryFromRoomResponse(getMessageHistoryFromRoomCommand.getMessageId(),
-                            getMessageHistoryFromRoomCommand.getRoomName(), users, messages));
-        });
-        return new OperationSucceedResponse(getMessageHistoryFromRoomCommand.getMessageId());
+        if (persistentDataAPI.checkIfIsGroupMember(username, getMessageHistoryFromRoomCommand.getRoomName())) {
+            executorService.submit(() -> {
+                List<Pair<String, String>> usersFiles = persistentDataAPI.getOrderedMessagesFromGroup(getMessageHistoryFromRoomCommand.getRoomName());
+                List<String> users = usersFiles.stream().map(Pair::getLeft).collect(Collectors.toList());
+                List<String> messages = usersFiles.stream().map(message -> encryptionAPI.symmetricDecryptString(message.getRight()))
+                        .collect(Collectors.toList());
+                simpMessagingTemplate.convertAndSendToUser(username, "/queue/message",
+                        new MessageHistoryFromRoomResponse(getMessageHistoryFromRoomCommand.getMessageId(),
+                                getMessageHistoryFromRoomCommand.getRoomName(), users, messages));
+            });
+            return new OperationSucceedResponse(getMessageHistoryFromRoomCommand.getMessageId());
+        } else {
+            return new OperationFailResponse(getMessageHistoryFromRoomCommand.getMessageId(), "You are not group member");
+        }
     }
 
     /**
