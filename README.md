@@ -11,4 +11,4 @@ The docker-compose script will launch the application with the **local** profile
 
 ### Run application in Azure
 If you want setup the Command API server to deploy in Azure, you must follow the instructions located in the file
-README_DEPLOY_AZURE.md, located in the [ChatDeploy](https://github.com/TheChatThatRocks/ChatDeploy) repository.
+README.md, located in the [ChatDeploy](https://github.com/TheChatThatRocks/ChatDeploy) repository.
